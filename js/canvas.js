@@ -59,7 +59,6 @@ Canvas.prototype = {
   add_point: function(px, py) {
     this.x.push(this.xscale.invert(px));
     this.y.push(this.yscale.invert(py));
-    console.log(this.svg);
     this.svg.append("circle")
             .attr("cx", px)
             .attr("cy", py)
