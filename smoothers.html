@@ -16,11 +16,11 @@
     <div id=interface>
       <label for=smooth-type>Smoothing Type:</label>
       <select name=smooth-type id=smooth-type>
+        <option value=smooth-type-none>None</option>
         <option value=smooth-type-mean>Mean</option>
         <option value=smooth-type-runmean>Running Mean</option>
         <option value=smooth-type-linreg>Linear Regression</option>
       </select>
-      <button id=smooth type=button>Smooth</button>
       <button id=clear type=button>Clear</button>
     </div>
   </body>
@@ -34,10 +34,13 @@
     d3.select("button#clear").on("click", function() {
       C.clear();
     });
-    d3.select("button#smooth").on("click", function() {
+    d3.select("select#smooth-type").on("change", function() {
       var e = document.getElementById("smooth-type");
-      C.smooth(smoothers[e.options[e.selectedIndex].value]);
+      console.log(e.options[e.selectedIndex].value);
+      C.smoother = smoothers[e.options[e.selectedIndex].value];
+      C.smooth();
     })
+
 
   </script>
 

@@ -20,6 +20,7 @@ var Canvas = function(elem, dimensions, margins) {
                  .scale(this.yscale)
                  .orient("left")
                  .ticks(10);
+
   // Physical manifestation of the canvas
   this.svg = d3.select(elem).append("svg")
                .attr("height", dimensions.height)
@@ -36,12 +37,20 @@ var Canvas = function(elem, dimensions, margins) {
                                 margins.left +
                               ", 0)")
           .call(this.yaxis);
+
   // Data associated with the canvas. (x, y) is the collection of user drawn
   // points; (xhat, yhat) is a smoothing of those points.  
   this.x = [];
   this.xhat = d3.range(0, 1, .01)
   this.y = [];
   this.yhat = [];
+
+  // Smoothing function currently associated with the canvas
+  this.smoother = undefined;
+
+  // Is there a currently rendered smoother?
+  this.hasbeensmoothed = false;
+
   // Bind an event handler to the canvasr: a click even on the physical canvas
   // draws a physical point, add adds the coordinates of the point to the x and
   // y attributes.  Note that the method add_point resides on the prototype.
@@ -49,6 +58,9 @@ var Canvas = function(elem, dimensions, margins) {
   this.svg.on("click", function() {
     var p = d3.mouse(this);
     that.add_point(p[0], p[1])
+    if(that.x.length > 2) {
+      that.smooth();
+    }
   });
 }
 
@@ -72,35 +84,57 @@ Canvas.prototype = {
     this.y = [];
     this.yhat = [];
     this.svg.selectAll('circle').remove();
+    this.hasbeensmoothed = false;
   },
 
   // Smooth the data drawn on the canvas with a certain smoothing algorithm.
   // The smoother argument should process two arrays representing the x and
   // y data to be smoothed, and return a function that, when applied to an
   // array of new x values, returns the associated smoothed y values.
-  smooth: function(smoother) {
-     this.clear_smooth();
-     this.yhat = smoother(this.x, this.y)(this.xhat)
-     that = this  // Preserve for method chain.
-     this.svg.selectAll("circles")
-             .data(d3.zip(that.xhat, that.yhat))
-             .enter()
-             .append("circle")
-             .attr("cx", function(d) {
-               return that.xscale(d[0])
-             })
-             .attr("cy", function(d) {
-               return that.yscale(d[1])
-             })
-             .attr("r", 2)
-             .attr("fill", "lightskyblue")
-             .attr("id", "data-smoother");
-
+  smooth: function() {
+    // Only makes sense to smooth more than two points, if less, bail early.
+    if(this.x.length <= 1) {return;}
+    // Smooth the data points
+    this.yhat = this.smoother(this.x, this.y)(this.xhat);
+    that = this;  // Preserve for method chain.
+    if(!this.hasbeensmoothed) {
+      // If no smoothed graph has been rendered yet, render it.
+      this.svg.selectAll("circle")
+              .data(d3.zip(that.xhat, that.yhat))
+              .enter()
+              .append("circle")
+              .attr("cx", function(d) {
+                return that.xscale(d[0])
+              })
+              .attr("cy", function(d) {
+                return that.yscale(d[1])
+              })
+              .attr("r", 2)
+              .attr("fill", "lightskyblue")
+              .attr("id", "data-smoother");
+      this.hasbeensmoothed = true;
+    } else {
+      // If there is already a smoothed graph, render it with a transition
+      var spoints = this.svg.selectAll("circle#data-smoother")
+                        .data(d3.zip(that.xhat, that.yhat))
+			.transition()
+			.duration(1000)
+			.attr("cx", function(d) {
+                          return that.xscale(d[0])
+			})
+			.attr("cy", function(d) {
+                          return that.yscale(d[1])
+			})
+			.attr("r", 2)
+			.attr("fill", "lightskyblue")
+			.attr("id", "data-smoother");
+    }
   },
 
   // Clear the smoother drawn on the canvas.
   clear_smooth: function() {
     this.yhat = []
     this.svg.selectAll('circle#data-smoother').remove();
+    this.hasbeensmoothed = false;
   }
 };
