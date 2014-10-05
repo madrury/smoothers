@@ -11,9 +11,29 @@
   </head>
 
   <body>
-    <h1>Fun With 1D Smoothers</h1>
-    <div id=graph></div>
-    <div id=interface>
+
+    <div id=title class=title>
+      <h1>Fun With 1D Smoothers</h1>
+    </div>
+
+    <div id=instructions class=instructions>
+      <p class=p-instructions>
+        This app demos various 1d scatterplot smoothers in real time.  
+      </p>
+      <p class=instructions>
+        Click on the canvas to add points to the scatterplot.  Use 
+        the interface below the canvas to select the smoothing algorithm.
+      <p class=instructions>
+        Once you've added three points, the smoother will kick in 
+        automatically.
+      </p>
+    </div>
+
+    <div id=graph class=graph></div>
+
+    <br>
+
+    <div id=interface class=interface>
       <label for=smooth-type>Smoothing Type:</label>
       <select name=smooth-type id=smooth-type>
         <option value=smooth-type-none>None</option>
@@ -23,6 +43,7 @@
       </select>
       <button id=clear type=button>Clear</button>
     </div>
+
   </body>
 
   <script type="text/javascript">

@@ -7,3 +7,32 @@
   font-size: 11px;
 }
 
+h1 {
+  font-family: sans-serif;
+  color: #F0F0F0;
+}
+
+.instructions {
+  font-family: sans-serif;
+  color: #0099CC;
+  font-size: 12px;
+}
+
+div.instructions {
+  width: 620px;
+}
+
+div.interface {
+  border: 1px solid;
+  border-radius: 4px;
+  border-color: #A0A0A0;
+  width: 600px;
+  padding: 10px;
+}
+
+div.title {
+  text-align: center;
+  border-radius: 15px;
+  background-color: #A0A0A0;
+  width: 620px;
+}
