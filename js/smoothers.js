@@ -73,4 +73,22 @@ smoothers = {
     }
   },
 
+  "smooth-type-gaussk": function(xs, ys) {
+    console.log("in the gauss smoother");
+    var lambda = .01;
+    var gauss_kern_smooth = function(x) {
+      var ds = xs.map(function(xi) {return x - xi;});
+      var ws = ds.map(function(di) {return Math.exp(-di*di/lambda);});
+      console.log("ws: " + ws);
+      var normc = d3.sum(ws); 
+      console.log("normc: " + normc);
+      var normws = ws.map(function(wi) {return wi / normc;});
+      console.log("normws: " + normws);
+      return d3.sum(d3.zip(normws, ys).map(function(p) {return p[0]*p[1]}));
+    };
+    return function(x) {
+      return x.map(gauss_kern_smooth)
+    }
+  }
+
 };
