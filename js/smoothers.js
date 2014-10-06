@@ -1,3 +1,18 @@
+// Helper functions
+var linear_regressor = function(xs, ys) {
+  var xmean = d3.mean(xs);
+  var ymean = d3.mean(ys);
+  var xymean = d3.mean(d3.zip(xs, ys).map(function(p) {return p[0]*p[1]}));
+  var xsqmean = d3.mean(d3.zip(xs, xs).map(function(p) {return p[0]*p[1]}));
+  var beta = (xymean - xmean * ymean) / (xsqmean - xmean * xmean);
+  var betaz = ymean - beta * xmean;
+  return function(x) {
+    return betaz + beta * x;
+  }
+};
+
+// Smoothers should consume two numeric arrays, and return a mapping from 
+// numeric arrays to numeric arrays
 smoothers = {
 
   // Simply return the mean of the y values as a smoother
@@ -31,20 +46,31 @@ smoothers = {
 
   // Statndard linear regression smoother
   "smooth-type-linreg": function(xs, ys) {
-    // Calcualte the intercept and linear term from linear regression
-    // over the data
-    var xmean = d3.mean(xs);
-    var ymean = d3.mean(ys);
-    var xymean = d3.mean(d3.zip(xs, ys).map(function(p) {return p[0]*p[1]}));
-    var xsqmean = d3.mean(d3.zip(xs, xs).map(function(p) {return p[0]*p[1]}));
-    var beta = (xymean - xmean * ymean) / (xsqmean - xmean * xmean);
-    var betaz = ymean - beta * xmean;
-    var linreg = function(newx) {
-      return betaz + beta * newx;
-    }
+    var linreg = linear_regressor(xs, ys);
     return function(x) {
       return x.map(linreg);
     }
-  }
+  },
+
+  "smooth-type-runline": function(xs, ys) {
+    // Reorder xs and ys so that xs is in increasing order
+    var psort = d3.zip(xs, ys).sort(function(a, b) {return a[0] - b[0]});
+    var xsort = psort.map(function(p) {return p[0]});
+    var ysort = psort.map(function(p) {return p[1]});
+    var loc_lin_approx = function(newx) {
+      var pos_in_array = d3.bisect(xsort, newx);
+      // TODO: Check that you lined up the fenceposts.
+      var cutoffs = [Math.max(0, pos_in_array - 3), 
+                     Math.min(xsort.length, pos_in_array + 3)
+          ];
+      var locx =  xsort.slice(cutoffs[0], cutoffs[1]);
+      var locy =  ysort.slice(cutoffs[0], cutoffs[1]);
+      return linear_regressor(locx, locy)(newx);
+    }
+    console.log(ysort);
+    return function(x) {
+      return x.map(loc_lin_approx);
+    }
+  },
 
 };
