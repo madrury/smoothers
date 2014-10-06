@@ -96,38 +96,32 @@ Canvas.prototype = {
     if(this.x.length <= 1) {return;}
     // Smooth the data points
     this.yhat = this.smoother(this.x, this.y)(this.xhat);
+    var data = d3.zip(this.xhat, this.yhat);
+    var that = this;
+    var line = d3.svg.line()
+                     .x(function(d) {return that.xscale(d[0]);})
+		     .y(function(d) {return that.yscale(d[1]);})
+		     .interpolate("linear")
+
     that = this;  // Preserve for method chain.
     if(!this.hasbeensmoothed) {
       // If no smoothed graph has been rendered yet, render it.
-      this.svg.selectAll("circle")
-              .data(d3.zip(that.xhat, that.yhat))
-              .enter()
-              .append("circle")
-              .attr("cx", function(d) {
-                return that.xscale(d[0])
-              })
-              .attr("cy", function(d) {
-                return that.yscale(d[1])
-              })
-              .attr("r", 2)
-              .attr("fill", "lightskyblue")
-              .attr("id", "data-smoother");
+      this.svg.append("path")
+	      .attr("d", line(data))
+	      .attr("stroke", "lightskyblue")
+	      .attr("stroke-width", 2)
+	      .attr("fill", "none")
+	      .attr("id", "smoothed-path");
       this.hasbeensmoothed = true;
     } else {
       // If there is already a smoothed graph, render it with a transition
-      var spoints = this.svg.selectAll("circle#data-smoother")
-                        .data(d3.zip(that.xhat, that.yhat))
+      this.svg.selectAll("path#smoothed-path")
 			.transition()
 			.duration(1000)
-			.attr("cx", function(d) {
-                          return that.xscale(d[0])
-			})
-			.attr("cy", function(d) {
-                          return that.yscale(d[1])
-			})
-			.attr("r", 2)
-			.attr("fill", "lightskyblue")
-			.attr("id", "data-smoother");
+			.attr("d", line(data))
+			.attr("stroke", "lightskyblue")
+			.attr("stroke-width", 2)
+			.attr("fill", "none");
     }
   },
 
