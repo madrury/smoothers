@@ -84,6 +84,7 @@ Canvas.prototype = {
     this.y = [];
     this.yhat = [];
     this.svg.selectAll('circle').remove();
+    this.svg.selectAll('path#smoothed-path').remove();
     this.hasbeensmoothed = false;
   },
 
