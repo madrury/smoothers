@@ -11,6 +11,27 @@ var linear_regressor = function(xs, ys) {
   }
 };
 
+var wmean = function(x, w) {
+  var r = [];
+  for(i = 0; i < x.length; i++) {
+    r.push(x[i]*w[i]);
+  }
+  return d3.sum(r) / d3.sum(w);
+}
+
+var weighted_linear_regressor = function(xs, ys, ws) {
+  var xmean = wmean(xs, ws);
+  var ymean = wmean(ys, ws);
+  var xymean = wmean(d3.zip(xs, ys).map(function(p) {return p[0]*p[1]}), ws);
+  var xsqmean = wmean(d3.zip(xs, xs).map(function(p) {return p[0]*p[1]}), ws);
+  var beta = (xymean - xmean * ymean) / (xsqmean - xmean * xmean);
+  var betaz = ymean - beta * xmean;
+  console.log(beta); console.log(betaz);
+  return function(x) {
+    return betaz + beta * x;
+  }
+}
+
 // Smoothers should consume two numeric arrays, and return a mapping from 
 // numeric arrays to numeric arrays
 smoothers = {
@@ -67,28 +88,46 @@ smoothers = {
       var locy =  ysort.slice(cutoffs[0], cutoffs[1]);
       return linear_regressor(locx, locy)(newx);
     }
-    console.log(ysort);
     return function(x) {
       return x.map(loc_lin_approx);
     }
   },
 
   "smooth-type-gaussk": function(xs, ys) {
-    console.log("in the gauss smoother");
     var lambda = .01;
     var gauss_kern_smooth = function(x) {
       var ds = xs.map(function(xi) {return x - xi;});
       var ws = ds.map(function(di) {return Math.exp(-di*di/lambda);});
-      console.log("ws: " + ws);
       var normc = d3.sum(ws); 
-      console.log("normc: " + normc);
       var normws = ws.map(function(wi) {return wi / normc;});
-      console.log("normws: " + normws);
       return d3.sum(d3.zip(normws, ys).map(function(p) {return p[0]*p[1]}));
     };
     return function(x) {
       return x.map(gauss_kern_smooth)
     }
-  }
+  },
+
+  "smooth-type-loess": function(xs, ys) {
+    var k = 5
+    var loess = function(x) {
+      console.log("x is: " + x);
+      var psort = d3.zip(xs, ys).sort(function(a, b) {
+                      return Math.abs(x - a[0]) - Math.abs(x - b[0])}
+                  );
+      var xsort = psort.map(function(p) {return p[0]}).slice(0, 7);
+      console.log(xsort)
+      var ysort = psort.map(function(p) {return p[1]}).slice(0, 7);
+      var nearest_nbrs = psort.slice(0, 7);
+      var ds = nearest_nbrs.map(function(p) {return Math.abs(p[0] - x)});
+      var dsmax = d3.max(ds);
+      var ws = ds.map(function(d) {
+                   return Math.pow(1 - d*d*d, 3) / (dsmax * dsmax * dsmax)
+	       });
+      return weighted_linear_regressor(xsort, ysort, ws)(x);
+    };
+    return function(x) {
+      return x.map(loess);
+    }
+  },
 
 };
