@@ -51,20 +51,19 @@
   </body>
 
   <script type="text/javascript">
+    var smoother;
 
     C = new Canvas("div#graph",
                   {height: 400, width: 600},
                   {top: 25, bottom: 25, left:25, right: 25}
             );
-    d3.select("button#clear").on("click", function() {
-      C.clear();
-    });
+
+    d3.select("button#clear").on("click", function() {C.clear();});
+
     d3.select("select#smooth-type").on("change", function() {
       var e = document.getElementById("smooth-type");
-      console.log(e.options[e.selectedIndex].value);
-      // This line is pretty bad, the smoother should be passed in.
-      C.smoother = smoothers[e.options[e.selectedIndex].value];
-      C.smooth();
+      smoother = smoothers[e.options[e.selectedIndex].value];
+      C.set_smoother(smoother)
     })
 
 

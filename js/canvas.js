@@ -1,6 +1,6 @@
 // A class representing a physical canvas which contains datapoints, and
 // on which a smoothing of those datapoints can be rendered.
-var Canvas = function(elem, dimensions, margins) {
+let Canvas = function(elem, dimensions, margins) {
 
     // Physical properties of the canvas
     this.height = dimensions.height;
@@ -50,13 +50,10 @@ var Canvas = function(elem, dimensions, margins) {
     // Bind an event handler to the canvasr: a click even on the physical canvas
     // draws a physical point, add adds the coordinates of the point to the x and
     // y attributes.  Note that the method add_point resides on the prototype.
-    var that = this
+    let that = this
     this.svg.on("click", function() {
-        var p = d3.mouse(this);
+        let p = d3.mouse(this);
         that.add_point(p[0], p[1])
-        if(that.x.length > 2) {
-            that.smooth();
-        }
     });
 }
 
@@ -73,9 +70,18 @@ Canvas.prototype = {
             .attr("cy", py)
             .attr("r", 3)
             .attr("id", "data-point");
+        if(this.x.length > 2) {
+            this.smooth();
+        }
     },
 
-            // Remove everything from the canvas.
+    // Change the smoothing algorithm.
+    set_smoother: function(smooother) {
+        this.smoother = smoother;
+        this.smooth()
+    },
+
+    // Remove everything from the canvas.
     clear: function() {
         this.x = [];
         this.y = [];
@@ -94,9 +100,9 @@ Canvas.prototype = {
         if(this.x.length <= 1) {return;}
         // Smooth the data points
         this.yhat = this.smoother(this.x, this.y)(this.xhat);
-        var data = d3.zip(this.xhat, this.yhat);
+        let data = d3.zip(this.xhat, this.yhat);
         that = this;  // Preserve for method chain.
-        var line = d3.svg.line()
+        let line = d3.svg.line()
                      .x(function(d) {return that.xscale(d[0]);})
                      .y(function(d) {return that.yscale(d[1]);})
                      .interpolate("linear")
