@@ -84,7 +84,26 @@ smoothers = {
     // Simple linear regression smoother.
     "smooth-type-linreg": function(xs, ys) {
         let linreg = linear_regressor(xs, ys);
-        return vectorize(linreg)
+        return vectorize(linreg);
+    },
+
+    // Multi linear regression with a quadratic basis expansion.
+    "smooth-type-quadreg": function(xs, ys) {
+        // Build the design matrix
+        let X = [];
+        for(i = 0; i < xs.length; i++) {
+            X.push([1, xs[i], xs[i]*xs[i]]);
+        }
+        // Solve the regression equations
+        let Xt = numeric.transpose(X);
+        let XtX = numeric.dot(Xt, X);
+        let Xty = numeric.dot(Xt, ys);
+        let betas = numeric.solve(XtX, Xty);
+        // Prediction function
+        let prediction_func = function(x) {
+            return betas[0] + betas[1] * x + betas[2] * x * x
+        };
+        return vectorize(prediction_func);
     },
 
     // Running line smoother.
