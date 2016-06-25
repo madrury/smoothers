@@ -20,8 +20,7 @@ smoother_ui = function(smoothers) {
             }
             // Bind a listener for change events.
             that = this;
-            d3.select("select#smooth-type").on("change", function() 
-            {
+            e.addEventListener("change", function() {
                 let smoother = e.options[e.selectedIndex].value;
                 that.msg_queue.push({"smoother-change": smoother});
             })

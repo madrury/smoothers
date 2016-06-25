@@ -1,6 +1,5 @@
 // Helper functions
 
-
 // Wrap a slope m and an intercept b into a linear function
 let linear_function = function(m, b) {
     return function(x) {
@@ -21,8 +20,8 @@ let wmean = function(x, w) {
 let linear_regressor = function(xs, ys) {
     let xmean = d3.mean(xs);
     let ymean = d3.mean(ys);
-    let xymean = d3.mean(d3.zip(xs, ys).map(function(p) {return p[0]*p[1]}));
-    let xsqmean = d3.mean(d3.zip(xs, xs).map(function(p) {return p[0]*p[1]}));
+    let xymean = d3.mean(d3.zip(xs, ys).map(p => p[0]*p[1]));
+    let xsqmean = d3.mean(d3.zip(xs, xs).map(p => p[0]*p[1]));
     let beta = (xymean - xmean * ymean) / (xsqmean - xmean * xmean);
     let betaz = ymean - beta * xmean;
     return linear_function(beta, betaz);
@@ -33,8 +32,8 @@ let linear_regressor = function(xs, ys) {
 let weighted_linear_regressor = function(xs, ys, ws) {
     let xmean = wmean(xs, ws);
     let ymean = wmean(ys, ws);
-    let xymean = wmean(d3.zip(xs, ys).map(function(p) {return p[0]*p[1]}), ws);
-    let xsqmean = wmean(d3.zip(xs, xs).map(function(p) {return p[0]*p[1]}), ws);
+    let xymean = wmean(d3.zip(xs, ys).map(p => p[0]*p[1]), ws);
+    let xsqmean = wmean(d3.zip(xs, xs).map(p => p[0]*p[1]), ws);
     let beta = (xymean - xmean * ymean) / (xsqmean - xmean * xmean);
     let betaz = ymean - beta * xmean;
     return linear_function(beta, betaz)
@@ -48,39 +47,71 @@ let vectorize = function(f) {
     }
 }
 
-// Smoothers should consume two numeric arrays, and return a mapping from 
-// numeric arrays to numeric arrays
+
+// A namespace for smoother functions.
+// Smoother functions should consume two numeric arrays, and return a mapping
+// from numeric arrays to numeric arrays.
 smoothers = {
 
-    // Trivial mean smoother.
-    // Simply return the mean of the y values as the smoothed data.
-    "smooth-type-mean": function(xs, ys) {
-        let mean = d3.mean(ys);
-        return vectorize(x => mean)
+    /* Trivial global mean smoother.
+
+    Simply return the mean of the y values as the smoothed data.
+
+    Hyperparamters: None
+    */
+    "smooth-type-mean": {
+
+        "label": "Constant Mean",
+
+        "smoother": function(parameters) {
+            return function(xs, ys) {
+                let mean = d3.mean(ys);
+                return vectorize(x => mean)
+            }
+        },
+
+        "parameters": []
     },
 
-    // Running mean smoother. 
-    // The smoothed value y at a given x is the mean value of the y data
-    // for those data with the closest k x data.
-    // TODO: Add number of neighbours parameter.
-    "smooth-type-runmean": function(xs, ys) {
-        // Reorder xs and ys so that xs is in increasing order
-        let psort = d3.zip(xs, ys).sort(function(a, b) {return a[0] - b[0]});
-        let xsort = psort.map(function(p) {return p[0]});
-        let ysort = psort.map(function(p) {return p[1]});
-        let mean_of_symm_nbrd = function(newx) {
-            // TODO: Abstract out finding the local neighbourhood.
-            let pos_in_array = d3.bisect(xsort, newx);
-            // TODO: Check that you lined up the fenceposts.
-            let cutoffs = [
-                Math.max(0, pos_in_array - 3), 
-                Math.min(xsort.length - 1, pos_in_array + 3)
-            ];
-            return d3.mean(ysort.slice(cutoffs[0], cutoffs[1]));
-        };
-        return vectorize(mean_of_symm_nbrd);
-    },
+    /* Running mean smoother. 
 
+    The smoothed value y at a given x is the mean value of the y data for
+    those data with the closest k x data.
+
+    Hyperparameters:
+        k: Number of data points included in each side of the symmetric nbhd.
+    */
+    "smooth-type-runmean": {
+
+        "label": "Running Mean",
+    
+        "smoother": function(parmaters) {
+            let k = Number(parameters["k"]);
+            return function(xs, ys) {
+                // Reorder xs and ys so that xs is in increasing order
+                let psort = d3.zip(xs, ys).sort(function(a, b) {return a[0] - b[0]});
+                let xsort = psort.map(p => p[0]);
+                let ysort = psort.map(p => p[1]);
+                let mean_of_symm_nbrd = function(newx) {
+                    // TODO: Abstract out finding the local neighbourhood.
+                    let pos_in_array = d3.bisect(xsort, newx);
+                    // TODO: Check that you lined up the fenceposts.
+                    let cutoffs = [
+                        Math.max(0, pos_in_array - k), 
+                        Math.min(xsort.length - 1, pos_in_array + k)
+                    ];
+                    return d3.mean(ysort.slice(cutoffs[0], cutoffs[1]));
+                };
+                return vectorize(mean_of_symm_nbrd);
+            };
+        },
+
+        "parameters": [
+            {"name": "k", "min": 0, "max": 10, "step": 1}
+        ]
+    }
+
+/*
     // Simple linear regression smoother.
     "smooth-type-linreg": function(xs, ys) {
         let linreg = linear_regressor(xs, ys);
@@ -163,5 +194,5 @@ smoothers = {
         };
         return vectorize(loess)
     },
-
+*/
 };
