@@ -57,16 +57,6 @@ let canvas = function(elem, dimensions, margins) {
         /* Message queue for the contorller object. */
         msg_queue: [],
 
-        /* Bind a click handler to the canvas which will respond to a mouse
-         * click by rendering a point and possibly drawing a smoothed curve.
-         */
-        bind_click_listener: function() {
-            svg.on("click", function() {
-                let p = d3.mouse(this);
-                this.add_point(p[0], p[1])
-            });
-        },
-
         /* Draw a point on the canvas and update the internal state. */
         add_point: function(px, py) {
             x.push(xscale.invert(px));
@@ -79,6 +69,17 @@ let canvas = function(elem, dimensions, margins) {
             if(x.length > 2) {
                 this.msg_queue.push({"smooth": null})
             }
+        },
+
+        /* Bind a click handler to the canvas which will respond to a mouse
+         * click by rendering a point and possibly drawing a smoothed curve.
+         */
+        bind_click_listener: function() {
+            let that = this;
+            svg.on("click", function() {
+                let p = d3.mouse(this);
+                that.add_point(p[0], p[1])
+            });
         },
 
         /* Remove everything from the canvas and clear all applicable state. */
