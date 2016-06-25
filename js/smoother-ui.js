@@ -3,7 +3,7 @@ smoother_ui = function(smoothers) {
     return {
 
         /* Message queue for the controller. */
-        msg_queue: [];
+        msg_queue: [],
 
         /* Bind the smoother UI to a select input dom element, render the possible
          * selections, and then listen for changes. 
@@ -21,7 +21,7 @@ smoother_ui = function(smoothers) {
             // Bind a listener for change events.
             d3.select("select#smooth-type").on("change", function() 
             {
-                let smoother = e.options[e.selectedIndex].value];
+                let smoother = e.options[e.selectedIndex].value;
                 this.msg_queue.push({"smoother-change": smoother});
             })
         },
