@@ -15,19 +15,22 @@ let smoother_ui = function(smoothers) {
             element = e;
             for(let smooth_type in smoothers) {
                 if(smoothers.hasOwnProperty(smooth_type)) {
-                    e.innerHTML += '<option value="' + smooth_type + '">' + 
-                                   smoothers[smooth_type]["label"] + 
-                                   '</option>';
+                    element.innerHTML += '<option value="' + smooth_type + '">' + 
+                                         smoothers[smooth_type]["label"] + 
+                                         '</option>';
                 }
             }
             // Bind a listener for change events.
             let that = this;
-            e.addEventListener("change", function() {
-                let smoother = e.options[e.selectedIndex].value;
-                console.log(that);
+            element.addEventListener("change", function() {
+                let smoother = that.get_selected_smoother()
                 that.msg_queue.push({"smoother-change": smoother});
             })
         },
+
+        get_selected_smoother: function() {
+            return element.options[element.selectedIndex].value;
+        }
    
     };
 

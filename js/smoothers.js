@@ -85,7 +85,7 @@ smoothers = {
 
         "label": "Running Mean",
     
-        "smoother": function(parmaters) {
+        "smoother": function(parameters) {
             let k = Number(parameters["k"]);
             return function(xs, ys) {
                 // Reorder xs and ys so that xs is in increasing order

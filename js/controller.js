@@ -24,15 +24,26 @@ let controller = function(canvas, smoother_ui, parameter_ui) {
         },
 
         field_canvas_msg: function(msg) {
-            console.log("message from canvas " + msg);
+            let smoother_name = smoother_ui.get_selected_smoother(); 
+            let smoother = smoothers[smoother_name];
+            let parameters = parameter_ui.get_selected_parameters();
+            canvas.smooth(smoother, parameters);
         },
 
         field_smoother_ui_msg: function(msg) {
-            console.log("message from smoother ui  " + msg);
+            let smoother_name = smoother_ui.get_selected_smoother();
+            let smoother = smoothers[smoother_name];
+            parameter_ui.clear();
+            parameter_ui.add_parameters(smoother.parameters);
+            let parameters = parameter_ui.get_selected_parameters();
+            canvas.smooth(smoother, parameters);
         },
 
         field_parameter_ui_msg: function(msg) {
-            console.log("message from parameter ui  " + msg);
+            let smoother_name = smoother_ui.get_selected_smoother(); 
+            let smoother = smoothers[smoother_name];
+            let parameters = parameter_ui.get_selected_parameters();
+            canvas.smooth(smoother, parameters);
         },
 
     }

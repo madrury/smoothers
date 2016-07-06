@@ -45,6 +45,11 @@ let parameter_ui = function() {
         },
 
         add_parameters_to_queue: function(queue) {
+            let parameters = this.get_selected_parameters(); 
+            queue.push(parameters);
+        },
+
+        get_selected_parameters: function() {
             let parameters = {};
             let sliders = document.getElementsByClassName("parameter-slider");
             let slider = null;
@@ -52,7 +57,7 @@ let parameter_ui = function() {
                 slider = sliders[i];
                 parameters[slider.getAttribute("name")] = Number(slider.value);
             }
-            queue.push(parameters);
+            return parameters;
         }
 
     }
