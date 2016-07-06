@@ -11,6 +11,7 @@
     <script type="text/javascript" src="js/smoother-ui.js"></script>
     <script type="text/javascript" src="js/parameter-ui.js"></script>
     <script type="text/javascript" src="js/canvas.js"></script>
+    <script type="text/javascript" src="js/controller.js"></script>
   </head>
 
   <body>
@@ -55,11 +56,16 @@
     let c = canvas("div#graph",
                    {height: 400, width: 600},
                    {top: 25, bottom: 25, left:25, right: 25});
+    c.bind_click_listener();
+
+
     let sui = smoother_ui(smoothers); 
     sui.bind(document.getElementById("smooth-type"))
     let pui = parameter_ui();
     pui.bind(document.getElementById("interface-hyperparamters"))
 
+    let ct = controller(c, sui, pui);
+    ct.run();
 
   </script>
 
