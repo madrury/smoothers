@@ -1,4 +1,4 @@
-smoother_ui = function(smoothers) {
+let smoother_ui = function(smoothers) {
 
     return {
 

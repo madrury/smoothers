@@ -10,7 +10,7 @@ let make_input_slider = function(id, min, max, step) {
 
 /* User interface for hyper-parameter selection.
  */
-parameter_ui = function() {
+let parameter_ui = function() {
 
     element = null;
 
