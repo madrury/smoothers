@@ -1,5 +1,7 @@
 let smoother_ui = function(smoothers) {
 
+    let element = null;
+
     return {
 
         /* Message queue for the controller. */
@@ -19,9 +21,10 @@ let smoother_ui = function(smoothers) {
                 }
             }
             // Bind a listener for change events.
-            that = this;
+            let that = this;
             e.addEventListener("change", function() {
                 let smoother = e.options[e.selectedIndex].value;
+                console.log(that);
                 that.msg_queue.push({"smoother-change": smoother});
             })
         },
