@@ -10,25 +10,24 @@
 let canvas = function(elem, dimensions, margins) {
 
     /* Physical properties of the canvas */
-    height = dimensions.height;
-    width = dimensions.width;
-    margins = margins;
-    xscale = d3.scale.linear()
+    let height = dimensions.height;
+    let width = dimensions.width;
+    let xscale = d3.scale.linear()
         .domain([0, 1])
         .range([margins.left, dimensions.width - margins.right]);
-    xaxis = d3.svg.axis()
+    let xaxis = d3.svg.axis()
         .scale(xscale)
         .orient("bottom")
         .ticks(10);
-    yscale = d3.scale.linear()
+    let yscale = d3.scale.linear()
         .domain([0, 1])
         .range([dimensions.height - margins.bottom, margins.top]);
-    yaxis = d3.svg.axis()
+    let yaxis = d3.svg.axis()
         .scale(yscale)
         .orient("left")
         .ticks(10);
 
-    svg = d3.select(elem).append("svg")
+    let svg = d3.select(elem).append("svg")
         .attr("height", dimensions.height)
         .attr("width", dimensions.width);
     svg.append("g")
@@ -41,15 +40,15 @@ let canvas = function(elem, dimensions, margins) {
         .call(yaxis);
 
     /* Data associated with the canvas. (x, y) is the collection of user drawn
-     * points; (xhat, yhat) is a smoothing of those points.  
+     * points; (xhat, yhat) is a smoothing of those points.
      */
-    x = [];
-    xhat = d3.range(0, 1, .01)
-    y = [];
-    yhat = [];
+    let x = [];
+    let xhat = d3.range(0, 1, .01);
+    let y = [];
+    let yhat = [];
 
     /* Is there a currently rendered smoother? */
-    hasbeensmoothed = false;
+    let hasbeensmoothed = false;
 
 
     return {
@@ -67,7 +66,7 @@ let canvas = function(elem, dimensions, margins) {
                 .attr("r", 3)
                 .attr("id", "data-point");
             if(x.length > 2) {
-                this.msg_queue.push({"smooth": null})
+                this.msg_queue.push({"smooth": null});
             }
         },
 
