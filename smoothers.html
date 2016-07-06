@@ -7,7 +7,6 @@
     <link href="css/smoothers.css" rel="stylesheet" type="text/css">
     <script type="text/javascript" src="d3/d3.v3.js"></script>
     <script type="text/javascript" src="numeric-js/numeric.js"></script>
-    <script type="text/javascript" src="js/hyperparameters.js"></script>
     <script type="text/javascript" src="js/smoothers.js"></script>
     <script type="text/javascript" src="js/smoother-ui.js"></script>
     <script type="text/javascript" src="js/parameter-ui.js"></script>
@@ -51,15 +50,16 @@
   </body>
 
   <script type="text/javascript">
-    let smoother_select = document.getElementById("smooth-type");
 
     /* Initialize the interface */
     let c = canvas("div#graph",
                    {height: 400, width: 600},
                    {top: 25, bottom: 25, left:25, right: 25});
-            
     let sui = smoother_ui(smoothers); 
+    sui.bind(document.getElementById("smooth-type"))
     let pui = parameter_ui();
+    pui.bind(document.getElementById("interface-hyperparamters"))
+
 
   </script>
 
