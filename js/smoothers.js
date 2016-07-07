@@ -107,17 +107,27 @@ smoothers = {
         },
 
         "parameters": [
-            {"name": "k", "min": 0, "max": 10, "step": 1}
+            {"name": "k", "min": 1, "max": 20, "step": 1}
         ]
-    }
-
-/*
-    // Simple linear regression smoother.
-    "smooth-type-linreg": function(xs, ys) {
-        let linreg = linear_regressor(xs, ys);
-        return vectorize(linreg);
     },
 
+    // Simple linear regression smoother.
+    "smooth-type-linreg": {
+
+        "label": "Linear Regression",
+
+        "smoother": function(parameters) {
+            return function(xs, ys) {
+                let linreg = linear_regressor(xs, ys);
+                return vectorize(linreg);
+            };
+        },
+
+        "parameters": []
+
+    },
+
+/*
     // Multi linear regression with a quadratic basis expansion.
     "smooth-type-quadreg": function(xs, ys) {
         // Build the design matrix
