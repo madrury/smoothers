@@ -172,6 +172,33 @@ smoothers = {
         "parameters": [
             {"name": "degree", "min": 1, "max": 8, "step": 1}
         ]
+
+    },
+
+    // Gaussian kernel smoother.
+    // TODO: Make lamda a parameter.
+    "smooth-type-gaussk": {
+
+        "label": "Gaussian Kernel Smoother",
+
+        "smoother": function(parameters) {
+            let lambda = Number(parameters["lambda"]);
+            return function(xs, ys) {
+                let gauss_kern_smooth = function(x) {
+                    let ds = xs.map(function(xi) {return x - xi;});
+                    let ws = ds.map(function(di) {return Math.exp(-di*di/lambda);});
+                    let normc = d3.sum(ws); 
+                    let normws = ws.map(function(wi) {return wi / normc;});
+                    return d3.sum(d3.zip(normws, ys).map(function(p) {return p[0]*p[1]}));
+                };
+                return vectorize(gauss_kern_smooth)
+            };
+        },
+
+        "parameters": [
+            {"name": "lambda", "min": .001, "max": .05, "step": .001}
+        ]
+
     },
 /*
     // Running line smoother.
@@ -197,19 +224,6 @@ smoothers = {
         return vectorize(loc_lin_approx);
     },
 
-    // Gaussian kernel smoother.
-    // TODO: Make lamda a parameter.
-    "smooth-type-gaussk": function(xs, ys) {
-        let lambda = .01;
-        let gauss_kern_smooth = function(x) {
-            let ds = xs.map(function(xi) {return x - xi;});
-            let ws = ds.map(function(di) {return Math.exp(-di*di/lambda);});
-            let normc = d3.sum(ws); 
-            let normws = ws.map(function(wi) {return wi / normc;});
-            return d3.sum(d3.zip(normws, ys).map(function(p) {return p[0]*p[1]}));
-        };
-        return vectorize(gauss_kern_smooth)
-    },
 
     // Locally weighted linear regression smoother.
     "smooth-type-loess": function(xs, ys) {
