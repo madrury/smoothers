@@ -7,6 +7,19 @@ let linear_function = function(m, b) {
     }
 }
 
+// Return a polynomial function given an array of its coefficients
+let polynomial_function = function(betas) {
+    return function(x) {
+        let y = betas[0];
+        let p = x;
+        for(let i = 1; i < betas.length; i++) {
+            y += betas[i] * p;
+            p = p * x; 
+        }
+        return y
+    }
+}
+
 // Weighted mean of x with weights w.  Weights may be un-normalized.
 let wmean = function(x, w) {
     let r = [];
@@ -127,26 +140,40 @@ smoothers = {
 
     },
 
-/*
-    // Multi linear regression with a quadratic basis expansion.
-    "smooth-type-quadreg": function(xs, ys) {
-        // Build the design matrix
-        let X = [];
-        for(i = 0; i < xs.length; i++) {
-            X.push([1, xs[i], xs[i]*xs[i]]);
-        }
-        // Solve the regression equations
-        let Xt = numeric.transpose(X);
-        let XtX = numeric.dot(Xt, X);
-        let Xty = numeric.dot(Xt, ys);
-        let betas = numeric.solve(XtX, Xty);
-        // Prediction function
-        let prediction_func = function(x) {
-            return betas[0] + betas[1] * x + betas[2] * x * x
-        };
-        return vectorize(prediction_func);
-    },
 
+    // Multi linear regression with a quadratic basis expansion.
+    "smooth-type-polyreg": {
+    
+        "label": "Polynomial Regression",
+
+        "smoother": function(parameters) {
+            let d = Number(parameters["degree"]);
+            return function(xs, ys) {
+                // Build the design matrix
+                let X = [];
+                for(let i = 0; i < xs.length; i++) {
+                    let row = [1];
+                    let x = xs[i];
+                    for(let j = 1; j <= d; j++) {
+                        row.push(x);
+                        x = x * xs[i];
+                    }
+                    X.push(row)
+                }
+                // Solve the regression equations
+                let Xt = numeric.transpose(X);
+                let XtX = numeric.dot(Xt, X);
+                let Xty = numeric.dot(Xt, ys);
+                let betas = numeric.solve(XtX, Xty);
+                return vectorize(polynomial_function(betas));
+            };
+        },
+
+        "parameters": [
+            {"name": "degree", "min": 1, "max": 8, "step": 1}
+        ]
+    },
+/*
     // Running line smoother.
     // To calculate the smoothed value of y at a given x, first take together the
     // k data points closest to x.  Then fit a simple linear regression to these k
