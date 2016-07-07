@@ -1,5 +1,14 @@
 // Helper functions
 
+// Dot product of two vectors
+let dot = function(v1, v2) {
+    let s = 0;
+    for(let i = 0; i < v1.length; i++) {
+        s += v1[i] * v2[i];
+    }
+    return s
+}
+
 // Wrap a slope m and an intercept b into a linear function
 let linear_function = function(m, b) {
     return function(x) {
@@ -7,16 +16,22 @@ let linear_function = function(m, b) {
     }
 }
 
+// Expand a number into an array of powers of that number.
+let expand_into_powers = function(x, degree) {
+    let p = [1];
+    let y = x;
+    for(let i = 1; i <= degree; i++) {
+        p.push(y);
+        y = y * x;
+    }
+    return p;
+}
+
 // Return a polynomial function given an array of its coefficients
 let polynomial_function = function(betas) {
     return function(x) {
-        let y = betas[0];
-        let p = x;
-        for(let i = 1; i < betas.length; i++) {
-            y += betas[i] * p;
-            p = p * x; 
-        }
-        return y
+        xs = expand_into_powers(x, betas.length - 1);
+        return dot(xs, betas);
     }
 }
 
@@ -152,12 +167,7 @@ smoothers = {
                 // Build the design matrix
                 let X = [];
                 for(let i = 0; i < xs.length; i++) {
-                    let row = [1];
-                    let x = xs[i];
-                    for(let j = 1; j <= d; j++) {
-                        row.push(x);
-                        x = x * xs[i];
-                    }
+                    let row = expand_into_powers(xs[i], d);
                     X.push(row)
                 }
                 // Solve the regression equations
