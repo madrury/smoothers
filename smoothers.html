@@ -39,6 +39,7 @@
 
     <div id=interface-hyperparamters class=interface>
       <label for=hyperparameter-interface>Smoothing Parameters:</label>
+      <div id=interface-hyperparamter-sliders></div>
     </div>
 
     <div id=interface-smoother class=interface>
@@ -62,7 +63,7 @@
     let sui = smoother_ui(smoothers); 
     sui.bind(document.getElementById("smooth-type"))
     let pui = parameter_ui();
-    pui.bind(document.getElementById("interface-hyperparamters"))
+    pui.bind(document.getElementById("interface-hyperparamter-sliders"))
 
     let ct = controller(c, sui, pui);
     ct.run();

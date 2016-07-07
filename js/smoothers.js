@@ -135,7 +135,7 @@ smoothers = {
         },
 
         "parameters": [
-            {"name": "k", "min": 1, "max": 20, "step": 1}
+            {"label": "Number of Neighbors", "name": "k", "min": 1, "max": 20, "step": 1}
         ]
     },
 
@@ -180,7 +180,7 @@ smoothers = {
         },
 
         "parameters": [
-            {"name": "degree", "min": 1, "max": 8, "step": 1}
+            {"label": "Polynomial Degree", "name": "degree", "min": 1, "max": 8, "step": 1}
         ]
 
     },
@@ -206,7 +206,8 @@ smoothers = {
         },
 
         "parameters": [
-            {"name": "lambda", "min": .001, "max": .05, "step": .001}
+            {"label": "Width of Kernel", "name": "lambda",
+             "min": .001, "max": .05, "step": .001}
         ]
 
     },
