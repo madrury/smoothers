@@ -5,7 +5,8 @@ let make_input_slider = function(label, id, min, max, step) {
                         '" name="' + id +
                         '" class="parameter-slider" min="' + min +
                         '" max="' + max + 
-                        '" step="' + step + '">';
+                        '" step="' + step + '">' +
+            '<span id="parameter-value-' + id + '"></span>';
 }
 
 /* User interface for hyper-parameter selection.
@@ -40,8 +41,13 @@ let parameter_ui = function() {
             let sliders = document.getElementsByClassName("parameter-slider");
             let that = this;
             for(let i = 0; i < sliders.length; i++) {
-                sliders[i].addEventListener('change', 
-                    function() {that.add_parameters_to_queue(that.msg_queue)});
+                let slider_name = sliders[i].getAttribute("name");
+                sliders[i].addEventListener('change', function() {
+                    that.display_selected_parameter(slider_name);
+                    that.add_parameters_to_queue(that.msg_queue);
+                });
+                // Force display of selected value when first displayed.
+                that.display_selected_parameter(slider_name);
             }
         },
 
@@ -59,6 +65,13 @@ let parameter_ui = function() {
                 parameters[slider.getAttribute("name")] = Number(slider.value);
             }
             return parameters;
+        },
+
+        display_selected_parameter: function(slider_name) {
+            let parameters = this.get_selected_parameters();
+            let parameter_value_id = "parameter-value-" + slider_name;
+            let value_span = document.getElementById(parameter_value_id);
+            value_span.innerHTML = parameters[slider_name];
         }
 
     }
