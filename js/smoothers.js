@@ -67,6 +67,18 @@ let weighted_linear_regressor = function(xs, ys, ws) {
     return linear_function(beta, betaz)
 };
 
+// Generate a simple basis of cubic splines with knots at a fixed set of
+// points.
+let spline_basis = function(xs) {
+    let basis = [];
+    for(let i = 0; i < xs.length; i++) {
+        ys = Array(xs.length).fill(0);
+        ys[i] = 1;
+        basis.push(numeric.spline(xs, ys));
+    }
+    return basis;
+}
+
 // Convert a function that maps numbers to numbers into one which maps
 // arrays to arrays.
 let vectorize = function(f) {
@@ -139,7 +151,7 @@ smoothers = {
         ]
     },
 
-    // Simple linear regression smoother.
+    /* Simple linear regression smoother. */
     "smooth-type-linreg": {
 
         "label": "Linear Regression",
@@ -156,7 +168,7 @@ smoothers = {
     },
 
 
-    // Multi linear regression with a quadratic basis expansion.
+    /* Multi linear regression with a quadratic basis expansion. */
     "smooth-type-polyreg": {
     
         "label": "Polynomial Regression",
@@ -186,7 +198,6 @@ smoothers = {
     },
 
     // Gaussian kernel smoother.
-    // TODO: Make lamda a parameter.
     "smooth-type-gaussk": {
 
         "label": "Gaussian Kernel Smoother",
@@ -211,31 +222,63 @@ smoothers = {
         ]
 
     },
-/*
-    // Running line smoother.
-    // To calculate the smoothed value of y at a given x, first take together the
-    // k data points closest to x.  Then fit a simple linear regression to these k
-    // data points.  The smoothed value of y is the prediction made from this
-    //linear regressor.
-    "smooth-type-runline": function(xs, ys) {
-        // Reorder xs and ys so that xs is in increasing order
-        let psort = d3.zip(xs, ys).sort(function(a, b) {return a[0] - b[0]});
-        let xsort = psort.map(function(p) {return p[0]});
-        let ysort = psort.map(function(p) {return p[1]});
-        let loc_lin_approx = function(newx) {
-            let pos_in_array = d3.bisect(xsort, newx);
-            // TODO: Check that you lined up the fenceposts.
-            let cutoffs = [Math.max(0, pos_in_array - 3), 
-                Math.min(xsort.length, pos_in_array + 3)
-            ];
-            let locx =  xsort.slice(cutoffs[0], cutoffs[1]);
-            let locy =  ysort.slice(cutoffs[0], cutoffs[1]);
-            return linear_regressor(locx, locy)(newx);
-        }
-        return vectorize(loc_lin_approx);
+
+    /* Running line smoother.
+     * To calculate the smoothed value of y at a given x, first take together the
+     * k data points closest to x.  Then fit a simple linear regression to these k
+     * data points.  The smoothed value of y is the prediction made from this
+     * linear regressor.
+     */
+    "smooth-type-runline": {
+
+        "label": "Running Line",
+
+        "smoother": function(parameters) {
+            let k = Number(parameters["k"]);
+            return function(xs, ys) {
+                // Reorder xs and ys so that xs is in increasing order
+                let psort = d3.zip(xs, ys).sort(function(a, b) {return a[0] - b[0]});
+                let xsort = psort.map(function(p) {return p[0]});
+                let ysort = psort.map(function(p) {return p[1]});
+                let loc_lin_approx = function(newx) {
+                    let pos_in_array = d3.bisect(xsort, newx);
+                    // TODO: Check that you lined up the fenceposts.
+                    let cutoffs = [
+                        Math.max(0, pos_in_array - k), 
+                        Math.min(xsort.length, pos_in_array + k)
+                    ];
+                    let locx =  xsort.slice(cutoffs[0], cutoffs[1]);
+                    let locy =  ysort.slice(cutoffs[0], cutoffs[1]);
+                    return linear_regressor(locx, locy)(newx);
+                }
+                return vectorize(loc_lin_approx);
+            };
+        },
+
+        "parameters": [
+            {"label": "Number of Neighbors", "name": "k", "min": 2, "max": 20, "step": 1}
+        ]
+
     },
+/*
+    "smooth-type-spline": {
+        "lable": "Natural Cubic Spline",
 
+        "smoother": function(parameters) {
+            let n = Number(parameters["n"]);
+            let knots = numeric.linspace(0, 1, n + 2).slice(1, n + 1);
+            return function(xs, ys) {
 
+            };
+        }
+
+        "parameters": [
+            {"label": "Number of Knots", "name": "n", "min": 2, "max": 10, "step": 1}
+        ]
+    }
+*/
+
+/*
     // Locally weighted linear regression smoother.
     "smooth-type-loess": function(xs, ys) {
         let k = 5
