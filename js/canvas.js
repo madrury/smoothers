@@ -95,7 +95,6 @@ let canvas = function(elem, dimensions, margins) {
          * algorithm in accord with certain parameters. 
          */
         smooth: function(smoother, parameters) {
-            console.log(smoother)
             // Only makes sense to smooth more than two points, if less, bail early.
             if(x.length <= 1) {
                 return;
