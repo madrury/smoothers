@@ -28,6 +28,7 @@ div.interface {
   border-color: #A0A0A0;
   width: 600px;
   padding: 10px;
+  margin-bottom: 5px;
 }
 
 div.title {
@@ -35,4 +36,8 @@ div.title {
   border-radius: 15px;
   background-color: #A0A0A0;
   width: 620px;
+}
+
+div.input-slider {
+    margin-left: 15px;
 }

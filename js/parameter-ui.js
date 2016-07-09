@@ -1,12 +1,14 @@
 /* Create html markup for an input slider element. */
 let make_input_slider = function(label, id, min, max, step) {
-    return '<span>' + label + ':</span>' +
-           '<input type="range" id="parameter-slider-' + id + 
-                        '" name="' + id +
-                        '" class="parameter-slider" min="' + min +
-                        '" max="' + max + 
-                        '" step="' + step + '">' +
-            '<span id="parameter-value-' + id + '"></span>';
+    return '<div class=input-slider>' +
+                '<span>' + label + ':</span>' +
+                '<input type="range" id="parameter-slider-' + id + 
+                                '" name="' + id +
+                                '" class="parameter-slider" min="' + min +
+                                '" max="' + max + 
+                                '" step="' + step + '">' +
+                    '<span id="parameter-value-' + id + '"></span>' +
+            '</div>';
 }
 
 /* User interface for hyper-parameter selection.
