@@ -67,16 +67,41 @@ let weighted_linear_regressor = function(xs, ys, ws) {
     return linear_function(beta, betaz)
 };
 
+
+make_ridge_shrinkage_matrix = function(n, lambda) {
+    let shrink_matrix = numeric.diag(numeric.rep([n + 1], lambda));
+    shrink_matrix[0][0] = 0;  // Don't shrink intercept.
+    return shrink_matrix
+}
+
+fit_ridge_regression = function(X, ys, lambda) {
+    let Xt = numeric.transpose(X);
+    let XtX = numeric.dot(Xt, X);
+    let Xty = numeric.dot(Xt, ys);
+    let shrink_matrix = make_ridge_shrinkage_matrix(X[0].length, lambda);
+    let betas = numeric.solve(numeric.add(XtX, shrink_matrix), Xty);
+    return betas
+}
+
 // Generate a simple basis of cubic splines with knots at a fixed set of
 // points.
-let spline_basis = function(xs) {
+let spline_basis = function(knots) {
     let basis = [];
-    for(let i = 0; i < xs.length; i++) {
-        ys = Array(xs.length).fill(0);
-        ys[i] = 1;
-        basis.push(numeric.spline(xs, ys));
+    basis.push(x => 1);
+    basis.push(x => x);
+    basis.push(x => x*x);
+    basis.push(x => x*x*x);
+    console.log(knots);
+    console.log("Entering for loop");
+    for(let i = 0; i < knots.length; i++) {
+        console.log(knots[i]);
+        basis.push(x => Math.max(Math.pow(x - knots[i], 3), 0));
     }
-    return basis;
+    return basis
+}
+
+evaluate_spline_basis = function(basis, xs) {
+    return xs.map(x => basis.map(s => s(x)))
 }
 
 // Convert a function that maps numbers to numbers into one which maps
@@ -186,12 +211,7 @@ smoothers = {
                     X.push(row)
                 }
                 // Solve the regression equations
-                let Xt = numeric.transpose(X);
-                let XtX = numeric.dot(Xt, X);
-                let shrink_matrix = numeric.diag(numeric.rep([d + 1], lambda));
-                shrink_matrix[0][0] = 0;  // Don't shrink intercept.
-                let Xty = numeric.dot(Xt, ys);
-                let betas = numeric.solve(numeric.add(XtX, shrink_matrix), Xty);
+                let betas = fit_ridge_regression(X, ys, lambda);
                 return vectorize(polynomial_function(betas));
             };
         },
@@ -266,23 +286,34 @@ smoothers = {
         ]
 
     },
-/*
+
     "smooth-type-spline": {
-        "lable": "Natural Cubic Spline",
+
+        "label": "Cubic Spline (Fixed Knots)",
 
         "smoother": function(parameters) {
             let n = Number(parameters["n"]);
             let knots = numeric.linspace(0, 1, n + 2).slice(1, n + 1);
+            let sp = spline_basis(knots);
+            let lambda = Number(parameters["lambda"]);
             return function(xs, ys) {
-
+                let X = evaluate_spline_basis(sp, xs);
+                let betas = fit_ridge_regression(X, ys, lambda);
+                let smooth_value = function(newx) {
+                    let basis_expansion = sp.map(s => s(newx))
+                    basis_expansion[0] = 1;
+                    return numeric.dot(betas, basis_expansion);
+                }
+                return vectorize(smooth_value);
             };
-        }
+        },
 
         "parameters": [
-            {"label": "Number of Knots", "name": "n", "min": 2, "max": 10, "step": 1}
+            {"label": "Number of Knots", "name": "n", "min": 2, "max": 10, "step": 1},
+            {"label": "Ridge Shrinkage", "name": "lambda", "min": 0, "max": .01, "step": .00001}
         ]
     }
-*/
+
 
 /*
     // Locally weighted linear regression smoother.
