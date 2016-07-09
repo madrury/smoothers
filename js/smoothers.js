@@ -91,10 +91,7 @@ let spline_basis = function(knots) {
     basis.push(x => x);
     basis.push(x => x*x);
     basis.push(x => x*x*x);
-    console.log(knots);
-    console.log("Entering for loop");
     for(let i = 0; i < knots.length; i++) {
-        console.log(knots[i]);
         basis.push(x => Math.max(Math.pow(x - knots[i], 3), 0));
     }
     return basis
@@ -172,7 +169,8 @@ smoothers = {
         },
 
         "parameters": [
-            {"label": "Number of Neighbors", "name": "k", "min": 1, "max": 20, "step": 1}
+            {"label": "Number of Neighbors", "name": "k",
+             "min": 1, "max": 20, "step": 1, "default": 2}
         ]
     },
 
@@ -217,8 +215,10 @@ smoothers = {
         },
 
         "parameters": [
-            {"label": "Polynomial Degree", "name": "degree", "min": 1, "max": 20, "step": 1},
-            {"label": "Ridge Shrinkage", "name": "lambda", "min": 0, "max": .1, "step": .0005}
+            {"label": "Polynomial Degree", "name": "degree",
+             "min": 1, "max": 20, "step": 1, "default": 2},
+            {"label": "Ridge Shrinkage", "name": "lambda",
+             "min": 0, "max": .01, "step": .00001, "default": 0}
         ]
 
     },
@@ -244,7 +244,7 @@ smoothers = {
 
         "parameters": [
             {"label": "Width of Kernel", "name": "lambda",
-             "min": .001, "max": .05, "step": .001}
+             "min": .001, "max": .05, "step": .001, "default": .01}
         ]
 
     },
@@ -282,7 +282,8 @@ smoothers = {
         },
 
         "parameters": [
-            {"label": "Number of Neighbors", "name": "k", "min": 2, "max": 20, "step": 1}
+            {"label": "Number of Neighbors", "name": "k",
+             "min": 2, "max": 20, "step": 1, "default": 2}
         ]
 
     },
@@ -309,8 +310,10 @@ smoothers = {
         },
 
         "parameters": [
-            {"label": "Number of Knots", "name": "n", "min": 2, "max": 10, "step": 1},
-            {"label": "Ridge Shrinkage", "name": "lambda", "min": 0, "max": .01, "step": .00001}
+            {"label": "Number of Knots", "name": "n",
+             "min": 2, "max": 10, "step": 1, "default": 2},
+            {"label": "Ridge Shrinkage", "name": "lambda",
+             "min": 0, "max": .001, "step": .000001, "default": 0}
         ]
     }
 

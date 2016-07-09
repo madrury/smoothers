@@ -1,12 +1,14 @@
 /* Create html markup for an input slider element. */
-let make_input_slider = function(label, id, min, max, step) {
+let make_input_slider = function(label, id, min, max, step, default_value) {
     return '<div class=input-slider>' +
                 '<span>' + label + ':</span>' +
                 '<input type="range" id="parameter-slider-' + id + 
                                 '" name="' + id +
                                 '" class="parameter-slider" min="' + min +
                                 '" max="' + max + 
-                                '" step="' + step + '">' +
+                                '" step="' + step + 
+                                '" value="' + default_value +
+                                '">' +
                     '<span id="parameter-value-' + id + '"></span>' +
             '</div>';
 }
@@ -37,7 +39,8 @@ let parameter_ui = function() {
                 parameter = parameter_list[i];
                 element.innerHTML += make_input_slider(
                     parameter.label, parameter.name,
-                    parameter.min, parameter.max, parameter.step)
+                    parameter.min, parameter.max, parameter.step,
+                    parameter.default)
             }
             // Add event listeners to all the input sliders.
             let sliders = document.getElementsByClassName("parameter-slider");
