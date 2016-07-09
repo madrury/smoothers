@@ -168,13 +168,16 @@ smoothers = {
     },
 
 
-    /* Multi linear regression with a quadratic basis expansion. */
+    /* Multi linear regression with a quadratic basis expansion and reidge
+     *  regression shrinkage. 
+     */
     "smooth-type-polyreg": {
     
-        "label": "Polynomial Regression",
+        "label": "Polynomial Ridge Regression",
 
         "smoother": function(parameters) {
             let d = Number(parameters["degree"]);
+            let lambda = Number(parameters["lambda"]);
             return function(xs, ys) {
                 // Build the design matrix
                 let X = [];
@@ -185,14 +188,17 @@ smoothers = {
                 // Solve the regression equations
                 let Xt = numeric.transpose(X);
                 let XtX = numeric.dot(Xt, X);
+                let shrink_matrix = numeric.diag(numeric.rep([d + 1], lambda));
+                shrink_matrix[0][0] = 0;  // Don't shrink intercept.
                 let Xty = numeric.dot(Xt, ys);
-                let betas = numeric.solve(XtX, Xty);
+                let betas = numeric.solve(numeric.add(XtX, shrink_matrix), Xty);
                 return vectorize(polynomial_function(betas));
             };
         },
 
         "parameters": [
-            {"label": "Polynomial Degree", "name": "degree", "min": 1, "max": 8, "step": 1}
+            {"label": "Polynomial Degree", "name": "degree", "min": 1, "max": 20, "step": 1},
+            {"label": "Ridge Shrinkage", "name": "lambda", "min": 0, "max": .1, "step": .0005}
         ]
 
     },
