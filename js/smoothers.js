@@ -85,7 +85,7 @@ fit_ridge_regression = function(X, ys, lambda) {
 
 // Generate a simple basis of cubic splines with knots at a fixed set of
 // points.
-let spline_basis = function(knots) {
+let cubic_spline_basis = function(knots) {
     let basis = [];
     basis.push(x => 1);
     basis.push(x => x);
@@ -100,6 +100,25 @@ let spline_basis = function(knots) {
 evaluate_spline_basis = function(basis, xs) {
     return xs.map(x => basis.map(s => s(x)))
 }
+
+fit_spline_regression = function(spline_basis_function) {
+    return function(parameters) {
+        let n = Number(parameters["n"]);
+        let knots = numeric.linspace(0, 1, n + 2).slice(1, n + 1);
+        let sp = spline_basis_function(knots);
+        let lambda = Number(parameters["lambda"]);
+        return function(xs, ys) {
+            let X = evaluate_spline_basis(sp, xs);
+            let betas = fit_ridge_regression(X, ys, lambda);
+            let smooth_value = function(newx) {
+                let basis_expansion = sp.map(s => s(newx))
+                return numeric.dot(betas, basis_expansion);
+            }
+            return vectorize(smooth_value);
+        };
+    }
+}
+
 
 // Convert a function that maps numbers to numbers into one which maps
 // arrays to arrays.
@@ -287,27 +306,26 @@ smoothers = {
         ]
 
     },
+/*
+    "smooth-type-pl": {
 
+        "label": "Piecewise Linear Spline (Fixed Knots)",
+
+        "smoother": spline_basis_function(pl_spline_basis);
+
+        "parameters": [
+            {"label": "Number of Knots", "name": "n",
+             "min": 2, "max": 10, "step": 1, "default": 2},
+            {"label": "Ridge Shrinkage", "name": "lambda",
+             "min": 0, "max": .001, "step": .000001, "default": 0}
+        ]
+    },
+*/
     "smooth-type-spline": {
 
         "label": "Cubic Spline (Fixed Knots)",
 
-        "smoother": function(parameters) {
-            let n = Number(parameters["n"]);
-            let knots = numeric.linspace(0, 1, n + 2).slice(1, n + 1);
-            let sp = spline_basis(knots);
-            let lambda = Number(parameters["lambda"]);
-            return function(xs, ys) {
-                let X = evaluate_spline_basis(sp, xs);
-                let betas = fit_ridge_regression(X, ys, lambda);
-                let smooth_value = function(newx) {
-                    let basis_expansion = sp.map(s => s(newx))
-                    basis_expansion[0] = 1;
-                    return numeric.dot(betas, basis_expansion);
-                }
-                return vectorize(smooth_value);
-            };
-        },
+        "smoother": fit_spline_regression(cubic_spline_basis),
 
         "parameters": [
             {"label": "Number of Knots", "name": "n",
