@@ -93,6 +93,18 @@ let pl_spline_basis = function(knots) {
     return basis
 }
 
+let quadratic_spline_basis = function(knots) {
+    let basis = [];
+    basis.push(x => 1);
+    basis.push(x => x);
+    basis.push(x => x*x);
+    for(let i = 0; i < knots.length; i++) {
+        console.log("making basis element");
+        basis.push(x => Math.pow(x - knots[i], 2)*((x - knots[i]) >= 0));
+    }
+    return basis
+}
+
 // Generate a simple basis of cubic splines with knots at a fixed set of
 // points.
 let cubic_spline_basis = function(knots) {
@@ -122,6 +134,7 @@ fit_spline_regression = function(spline_basis_function) {
             let betas = fit_ridge_regression(X, ys, lambda);
             let smooth_value = function(newx) {
                 let basis_expansion = sp.map(s => s(newx))
+                console.log(basis_expansion);
                 return numeric.dot(betas, basis_expansion);
             }
             return vectorize(smooth_value);
@@ -328,6 +341,20 @@ smoothers = {
              "min": 2, "max": 10, "step": 1, "default": 2},
             {"label": "Ridge Shrinkage", "name": "lambda",
              "min": 0, "max": .1, "step": .0001, "default": 0}
+        ]
+    },
+
+    "smooth-type-quad": {
+
+        "label": "Quadratic Spline (Fixed Knots)",
+
+        "smoother": fit_spline_regression(quadratic_spline_basis),
+
+        "parameters": [
+            {"label": "Number of Knots", "name": "n",
+             "min": 2, "max": 10, "step": 1, "default": 2},
+            {"label": "Ridge Shrinkage", "name": "lambda",
+             "min": 0, "max": .01, "step": .00001, "default": 0}
         ]
     },
 
