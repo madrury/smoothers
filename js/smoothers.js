@@ -83,6 +83,16 @@ fit_ridge_regression = function(X, ys, lambda) {
     return betas
 }
 
+let pl_spline_basis = function(knots) {
+    let basis = [];
+    basis.push(x => 1);
+    basis.push(x => x);
+    for(let i = 0; i < knots.length; i++) {
+        basis.push(x => Math.max(x - knots[i], 0));
+    }
+    return basis
+}
+
 // Generate a simple basis of cubic splines with knots at a fixed set of
 // points.
 let cubic_spline_basis = function(knots) {
@@ -306,21 +316,21 @@ smoothers = {
         ]
 
     },
-/*
+
     "smooth-type-pl": {
 
         "label": "Piecewise Linear Spline (Fixed Knots)",
 
-        "smoother": spline_basis_function(pl_spline_basis);
+        "smoother": fit_spline_regression(pl_spline_basis),
 
         "parameters": [
             {"label": "Number of Knots", "name": "n",
              "min": 2, "max": 10, "step": 1, "default": 2},
             {"label": "Ridge Shrinkage", "name": "lambda",
-             "min": 0, "max": .001, "step": .000001, "default": 0}
+             "min": 0, "max": .1, "step": .0001, "default": 0}
         ]
     },
-*/
+
     "smooth-type-spline": {
 
         "label": "Cubic Spline (Fixed Knots)",
