@@ -12,20 +12,14 @@ let canvas = function(elem, dimensions, margins) {
     /* Physical properties of the canvas */
     let height = dimensions.height;
     let width = dimensions.width;
-    let xscale = d3.scale.linear()
+    let xscale = d3.scaleLinear()
         .domain([0, 1])
         .range([margins.left, dimensions.width - margins.right]);
-    let xaxis = d3.svg.axis()
-        .scale(xscale)
-        .orient("bottom")
-        .ticks(10);
-    let yscale = d3.scale.linear()
+    let xaxis = d3.axisBottom(xscale).ticks(10);
+    let yscale = d3.scaleLinear()
         .domain([0, 1])
         .range([dimensions.height - margins.bottom, margins.top]);
-    let yaxis = d3.svg.axis()
-        .scale(yscale)
-        .orient("left")
-        .ticks(10);
+    let yaxis = d3.axisLeft(yscale).ticks(10);
 
     let svg = d3.select(elem).append("svg")
         .attr("height", dimensions.height)
@@ -102,10 +96,9 @@ let canvas = function(elem, dimensions, margins) {
             // Smooth the data points
             yhat = smoother.smoother(parameters)(x, y)(xhat);
             let data = d3.zip(xhat, yhat);
-            let line = d3.svg.line()
-                             .x(d => xscale(d[0]))
-                             .y(d => yscale(d[1]))
-                             .interpolate("linear")
+            let line = d3.line().curve(d3.curveBasis)
+                          .x(d => xscale(d[0]))
+                          .y(d => yscale(d[1]))
 
             if(!hasbeensmoothed) {
                 // If no smoothed graph has been rendered yet, render it.
