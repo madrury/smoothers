@@ -67,12 +67,7 @@ let weighted_linear_regressor = function(xs, ys, ws) {
     return linear_function(beta, betaz)
 };
 
-
-make_ridge_shrinkage_matrix = function(n, lambda) {
-    let shrink_matrix = numeric.diag(numeric.rep([n + 1], lambda));
-    shrink_matrix[0][0] = 0;  // Don't shrink intercept.
-    return shrink_matrix
-}
+/* Ridge Regression functions. */
 
 fit_ridge_regression = function(X, ys, lambda) {
     let Xt = numeric.transpose(X);
@@ -82,6 +77,51 @@ fit_ridge_regression = function(X, ys, lambda) {
     let betas = numeric.solve(numeric.add(XtX, shrink_matrix), Xty);
     return betas
 }
+
+let compute_matrix_standardization = function(X) {
+    let standardization = {"mean": [], "sd": []};
+    // Easier to iterate over the rows of a matrix than the columns.
+    let Xt = numeric.transpose(X);
+    for(let i = 0; i < Xt.length; i++) {
+        let standardized_row = compute_vector_standardization(Xt[i]);
+        standardization.mean.push(standardized_row.mean);
+        standardization.sd.push(standardized_row.sd);
+    }
+    return standardization;
+}
+
+let compute_vector_standardization = function(v) {
+    let mean = d3.mean(v);
+    let sd = d3.deviation(v);
+    return {'mean': mean, 'sd': sd}
+}
+
+let standardize_matrix = function(X, standardization) {
+    let Xt = numeric.transpose(X);
+    let S = []
+    for(let i = 0; i < Xt.length; i++) {
+        let row_standardization = {
+            "mean": standardization.mean[i],
+            "sd": standardization.sd[i]
+        };
+        let standardized_row = standardize_vector(Xt[i], row_standardization);
+        S.push(standardized_row);
+    }
+    return numeric.transpose(S);
+}
+
+let standardize_vector = function(v, standardization) {
+    v.map(x => (x - standardization.mean) / standardization.sd)
+}
+
+make_ridge_shrinkage_matrix = function(n, lambda) {
+    let shrink_matrix = numeric.diag(numeric.rep([n + 1], lambda));
+    shrink_matrix[0][0] = 0;  // Don't shrink intercept.
+    return shrink_matrix
+}
+
+
+/* Basies for fitting basis expansion models. */
 
 let pl_spline_basis = function(knots) {
     let basis = [];
@@ -99,7 +139,6 @@ let quadratic_spline_basis = function(knots) {
     basis.push(x => x);
     basis.push(x => x*x);
     for(let i = 0; i < knots.length; i++) {
-        console.log("making basis element");
         basis.push(x => Math.pow(x - knots[i], 2)*((x - knots[i]) >= 0));
     }
     return basis
@@ -108,6 +147,19 @@ let quadratic_spline_basis = function(knots) {
 // Generate a simple basis of cubic splines with knots at a fixed set of
 // points.
 let cubic_spline_basis = function(knots) {
+    let basis = [];
+    basis.push(x => 1);
+    basis.push(x => x);
+    basis.push(x => x*x);
+    basis.push(x => x*x*x);
+    for(let i = 0; i < knots.length; i++) {
+        basis.push(x => Math.max(Math.pow(x - knots[i], 3), 0));
+    }
+    return basis
+}
+
+// Stub.
+let natural_cubic_spline_basis = function(knots) {
     let basis = [];
     basis.push(x => 1);
     basis.push(x => x);
@@ -134,7 +186,6 @@ fit_spline_regression = function(spline_basis_function) {
             let betas = fit_ridge_regression(X, ys, lambda);
             let smooth_value = function(newx) {
                 let basis_expansion = sp.map(s => s(newx))
-                console.log(basis_expansion);
                 return numeric.dot(betas, basis_expansion);
             }
             return vectorize(smooth_value);
