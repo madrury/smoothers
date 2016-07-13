@@ -111,7 +111,7 @@ let standardize_matrix = function(X, standardization) {
 }
 
 let standardize_vector = function(v, standardization) {
-    v.map(x => (x - standardization.mean) / standardization.sd)
+    return v.map(x => (x - standardization.mean) / standardization.sd)
 }
 
 make_ridge_shrinkage_matrix = function(n, lambda) {
