@@ -133,6 +133,11 @@ let standardize_vector = function(v, standardization) {
 
 /* Basies for fitting basis expansion models. */
 
+// Stub.
+let polynomial_basis = function(d) {
+    return null
+}
+
 let pl_spline_basis = function(knots) {
     let basis = [];
     basis.push(x => x);
@@ -177,34 +182,39 @@ let natural_cubic_spline_basis = function(knots) {
     return basis
 }
 
-evaluate_spline_basis = function(basis, xs) {
+let evaluate_basis_expansion = function(basis, xs) {
     return xs.map(x => basis.map(s => s(x)))
 }
 
-fit_spline_regression = function(spline_basis_function) {
+let make_spline_regression = function(spline_basis_function) {
     return function(parameters) {
         let n = Number(parameters["n"]);
         let knots = numeric.linspace(0, 1, n + 2).slice(1, n + 1);
         let sp = spline_basis_function(knots);
         let lambda = Number(parameters["lambda"]);
-        return function(xs, ys) {
-            let X = evaluate_spline_basis(sp, xs);
-            let ridge = fit_ridge_regression(X, ys, lambda);
-            let smooth_value = function(newx) {
-                // There is a small hack here.  After getting the basis expansion, we have a
-                // vector.  We immediately wrap this in a list, creating a one row matrix.
-                // This allows us to use standardize_matrix, avoiding duplication of some logic.
-                let basis_expansion = [sp.map(s => s(newx))]
-                let standardized_basis_expansion = 
-                    standardize_matrix(basis_expansion, ridge.Xsd)[0]
-                return (
-                    numeric.dot(ridge.betas, standardized_basis_expansion) * ridge.ysd.sd
-                    + ridge.ysd.mean); 
-                
-            }
-            return vectorize(smooth_value);
-        };
+        return make_basis_expansion_regression(sp, lambda);
     }
+}
+
+let make_basis_expansion_regression = function(basis, lambda) {
+    return function(xs, ys) {
+        let X = evaluate_basis_expansion(basis, xs);
+        let ridge = fit_ridge_regression(X, ys, lambda);
+        let smooth_value = function(newx) {
+            // There is a small hack here.  After getting the basis
+            // expansion, we have a vector.  We immediately wrap this in a
+            // list, creating a one row matrix.  This allows us to use
+            // standardize_matrix, avoiding duplication of some logic.
+            let basis_expansion = [basis.map(s => s(newx))]
+            let standardized_basis_expansion = 
+                standardize_matrix(basis_expansion, ridge.Xsd)[0]
+            return (
+                numeric.dot(ridge.betas, standardized_basis_expansion) * ridge.ysd.sd
+                + ridge.ysd.mean); 
+            
+        }
+        return vectorize(smooth_value);
+    };
 }
 
 
@@ -399,7 +409,7 @@ smoothers = {
 
         "label": "Piecewise Linear Spline (Fixed Knots)",
 
-        "smoother": fit_spline_regression(pl_spline_basis),
+        "smoother": make_spline_regression(pl_spline_basis),
 
         "parameters": [
             {"label": "Number of Knots", "name": "n",
@@ -413,7 +423,7 @@ smoothers = {
 
         "label": "Quadratic Spline (Fixed Knots)",
 
-        "smoother": fit_spline_regression(quadratic_spline_basis),
+        "smoother": make_spline_regression(quadratic_spline_basis),
 
         "parameters": [
             {"label": "Number of Knots", "name": "n",
@@ -427,7 +437,7 @@ smoothers = {
 
         "label": "Cubic Spline (Fixed Knots)",
 
-        "smoother": fit_spline_regression(cubic_spline_basis),
+        "smoother": make_spline_regression(cubic_spline_basis),
 
         "parameters": [
             {"label": "Number of Knots", "name": "n",
