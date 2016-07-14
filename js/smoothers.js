@@ -175,12 +175,23 @@ let cubic_spline_basis = function(knots) {
 
 // Stub.
 let natural_cubic_spline_basis = function(knots) {
+    console.log(knots);
+    n_knots = knots.length;
     let basis = [];
     basis.push(x => x);
-    basis.push(x => x*x);
-    basis.push(x => x*x*x);
-    for(let i = 0; i < knots.length; i++) {
-        basis.push(x => Math.max(Math.pow(x - knots[i], 3), 0));
+    let ppart = (t => Math.max(t, 0))
+    let cube = (t => t*t*t);
+    let d = function(knot_idx) {
+        return function(x) {
+            return (
+                // Sure would be nice if this was scheme.
+                (cube(ppart(x - knots[knot_idx], 0)) 
+                    - cube(ppart(x - knots[n_knots - 1], 0)))
+                / (knots[n_knots - 1] - knots[knot_idx]));
+        };
+    };
+    for(let k = 0; k < n_knots - 2; k++) {
+        basis.push(x => d(k)(x) - d(n_knots - 2)(x));
     }
     return basis
 }
@@ -212,6 +223,7 @@ let make_basis_expansion_regression = function(basis, lambda) {
     return function(xs, ys) {
         let X = evaluate_basis_expansion(basis, xs);
         let ridge = fit_ridge_regression(X, ys, lambda);
+        console.log(ridge.Xsd)
         let smooth_value = function(newx) {
             // There is a small hack here.  After getting the basis
             // expansion, we have a vector.  We immediately wrap this in a
@@ -440,6 +452,20 @@ smoothers = {
         "parameters": [
             {"label": "Number of Knots", "name": "n",
              "min": 2, "max": 10, "step": 1, "default": 2},
+            {"label": "Ridge Shrinkage", "name": "lambda",
+             "min": 0, "max": .001, "step": .000001, "default": 0}
+        ]
+    },
+
+    "smooth-type-natural-spline": {
+
+        "label": "Natural Cubic Spline (Fixed Knots)",
+
+        "smoother": make_spline_regression(natural_cubic_spline_basis),
+
+        "parameters": [
+            {"label": "Number of Knots", "name": "n",
+             "min": 2, "max": 10, "step": 1, "default": 3},
             {"label": "Ridge Shrinkage", "name": "lambda",
              "min": 0, "max": .001, "step": .000001, "default": 0}
         ]
