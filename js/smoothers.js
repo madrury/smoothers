@@ -133,9 +133,12 @@ let standardize_vector = function(v, standardization) {
 
 /* Basies for fitting basis expansion models. */
 
-// Stub.
 let polynomial_basis = function(d) {
-    return null
+    let basis = [];
+    for(let i = 1; i <= d; i++) {
+        basis.push(x => Math.pow(x, i));
+    }
+    return basis;
 }
 
 let pl_spline_basis = function(knots) {
@@ -144,7 +147,7 @@ let pl_spline_basis = function(knots) {
     for(let i = 0; i < knots.length; i++) {
         basis.push(x => Math.max(x - knots[i], 0));
     }
-    return basis
+    return basis;
 }
 
 let quadratic_spline_basis = function(knots) {
@@ -193,6 +196,15 @@ let make_spline_regression = function(spline_basis_function) {
         let sp = spline_basis_function(knots);
         let lambda = Number(parameters["lambda"]);
         return make_basis_expansion_regression(sp, lambda);
+    }
+}
+
+let make_polynomial_regression = function(polynomial_basis_function) {
+    return function(parameters) {
+        let d = Number(parameters["degree"]);
+        let p = polynomial_basis_function(d);
+        let lambda = Number(parameters["lambda"]);
+        return make_basis_expansion_regression(p, lambda);
     }
 }
 
@@ -315,21 +327,7 @@ smoothers = {
     
         "label": "Polynomial Ridge Regression",
 
-        "smoother": function(parameters) {
-            let d = Number(parameters["degree"]);
-            let lambda = Number(parameters["lambda"]);
-            return function(xs, ys) {
-                // Build the design matrix
-                let X = [];
-                for(let i = 0; i < xs.length; i++) {
-                    let row = expand_into_powers(xs[i], d);
-                    X.push(row)
-                }
-                // Solve the regression equations
-                let betas = fit_ridge_regression(X, ys, lambda);
-                return vectorize(polynomial_function(betas));
-            };
-        },
+        "smoother": make_polynomial_regression(polynomial_basis),
 
         "parameters": [
             {"label": "Polynomial Degree", "name": "degree",
