@@ -16,25 +16,6 @@ let linear_function = function(m, b) {
     }
 }
 
-// Expand a number into an array of powers of that number.
-let expand_into_powers = function(x, degree) {
-    let p = [1];
-    let y = x;
-    for(let i = 1; i <= degree; i++) {
-        p.push(y);
-        y = y * x;
-    }
-    return p;
-}
-
-// Return a polynomial function given an array of its coefficients
-let polynomial_function = function(betas) {
-    return function(x) {
-        xs = expand_into_powers(x, betas.length - 1);
-        return dot(xs, betas);
-    }
-}
-
 // Weighted mean of x with weights w.  Weights may be un-normalized.
 let wmean = function(x, w) {
     let r = [];
@@ -55,7 +36,6 @@ let linear_regressor = function(xs, ys) {
     return linear_function(beta, betaz);
 };
 
-
 // Simple linear regression with sample weights.
 let weighted_linear_regressor = function(xs, ys, ws) {
     let xmean = wmean(xs, ws);
@@ -66,6 +46,15 @@ let weighted_linear_regressor = function(xs, ys, ws) {
     let betaz = ymean - beta * xmean;
     return linear_function(beta, betaz)
 };
+
+// Convert a function that maps numbers to numbers into one which maps
+// arrays to arrays.
+let vectorize = function(f) {
+    return function(arr) {
+        return arr.map(f)
+    }
+}
+
 
 /* Ridge Regression functions. */
 
@@ -133,67 +122,66 @@ let standardize_vector = function(v, standardization) {
 
 /* Basies for fitting basis expansion models. */
 
-let polynomial_basis = function(d) {
-    let basis = [];
-    for(let i = 1; i <= d; i++) {
-        basis.push(x => Math.pow(x, i));
-    }
-    return basis;
-}
+let basies = {
 
-let pl_spline_basis = function(knots) {
-    let basis = [];
-    basis.push(x => x);
-    for(let i = 0; i < knots.length; i++) {
-        basis.push(x => Math.max(x - knots[i], 0));
-    }
-    return basis;
-}
+    polynomial_basis: function(d) {
+        let basis = [];
+        for(let i = 1; i <= d; i++) {
+            basis.push(x => Math.pow(x, i));
+        }
+        return basis;
+    },
 
-let quadratic_spline_basis = function(knots) {
-    let basis = [];
-    basis.push(x => x);
-    basis.push(x => x*x);
-    for(let i = 0; i < knots.length; i++) {
-        basis.push(x => Math.pow(x - knots[i], 2)*((x - knots[i]) >= 0));
-    }
-    return basis
-}
+    pl_spline_basis: function(knots) {
+        let basis = [];
+        basis.push(x => x);
+        for(let i = 0; i < knots.length; i++) {
+            basis.push(x => Math.max(x - knots[i], 0));
+        }
+        return basis;
+    },
 
-// Generate a simple basis of cubic splines with knots at a fixed set of
-// points.
-let cubic_spline_basis = function(knots) {
-    let basis = [];
-    basis.push(x => x);
-    basis.push(x => x*x);
-    basis.push(x => x*x*x);
-    for(let i = 0; i < knots.length; i++) {
-        basis.push(x => Math.max(Math.pow(x - knots[i], 3), 0));
-    }
-    return basis
-}
+    quadratic_spline_basis: function(knots) {
+        let basis = [];
+        basis.push(x => x);
+        basis.push(x => x*x);
+        for(let i = 0; i < knots.length; i++) {
+            basis.push(x => Math.pow(x - knots[i], 2)*((x - knots[i]) >= 0));
+        }
+        return basis
+    },
 
-// Stub.
-let natural_cubic_spline_basis = function(knots) {
-    console.log(knots);
-    n_knots = knots.length;
-    let basis = [];
-    basis.push(x => x);
-    let ppart = (t => Math.max(t, 0))
-    let cube = (t => t*t*t);
-    let d = function(knot_idx) {
-        return function(x) {
-            return (
-                // Sure would be nice if this was scheme.
-                (cube(ppart(x - knots[knot_idx], 0)) 
-                    - cube(ppart(x - knots[n_knots - 1], 0)))
-                / (knots[n_knots - 1] - knots[knot_idx]));
+    cubic_spline_basis: function(knots) {
+        let basis = [];
+        basis.push(x => x);
+        basis.push(x => x*x);
+        basis.push(x => x*x*x);
+        for(let i = 0; i < knots.length; i++) {
+            basis.push(x => Math.max(Math.pow(x - knots[i], 3), 0));
+        }
+        return basis
+    },
+
+    natural_cubic_spline_basis: function(knots) {
+        n_knots = knots.length;
+        let basis = [];
+        basis.push(x => x);
+        let ppart = (t => Math.max(t, 0))
+        let cube = (t => t*t*t);
+        let d = function(knot_idx) {
+            return function(x) {
+                return (
+                    // Sure would be nice if this was scheme.
+                    (cube(ppart(x - knots[knot_idx], 0)) 
+                        - cube(ppart(x - knots[n_knots - 1], 0)))
+                    / (knots[n_knots - 1] - knots[knot_idx]));
+            };
         };
-    };
-    for(let k = 0; k < n_knots - 2; k++) {
-        basis.push(x => d(k)(x) - d(n_knots - 2)(x));
+        for(let k = 0; k < n_knots - 2; k++) {
+            basis.push(x => d(k)(x) - d(n_knots - 2)(x));
+        }
+        return basis
     }
-    return basis
 }
 
 let evaluate_basis_expansion = function(basis, xs) {
@@ -223,7 +211,6 @@ let make_basis_expansion_regression = function(basis, lambda) {
     return function(xs, ys) {
         let X = evaluate_basis_expansion(basis, xs);
         let ridge = fit_ridge_regression(X, ys, lambda);
-        console.log(ridge.Xsd)
         let smooth_value = function(newx) {
             // There is a small hack here.  After getting the basis
             // expansion, we have a vector.  We immediately wrap this in a
@@ -235,25 +222,27 @@ let make_basis_expansion_regression = function(basis, lambda) {
             return (
                 numeric.dot(ridge.betas, standardized_basis_expansion) * ridge.ysd.sd
                 + ridge.ysd.mean); 
-            
         }
         return vectorize(smooth_value);
     };
 }
 
 
-// Convert a function that maps numbers to numbers into one which maps
-// arrays to arrays.
-let vectorize = function(f) {
-    return function(arr) {
-        return arr.map(f)
-    }
-}
 
+/* A namespace for scatterplot smoother objects.
 
-// A namespace for smoother functions.
-// Smoother functions should consume two numeric arrays, and return a mapping
-// from numeric arrays to numeric arrays.
+  Each smoother object has three attributes:
+
+    - label: A short description of the smoother.  Appears in a select input
+      field.
+    - smoother: A smoother function.  Each smoother function has the form
+          f(parameters)(xs, ys)
+      where parameters is a dictionary containing the values of huperparameters
+      for the smoother, and xs, ys are equal length vectors of x-coordinates
+      and y-coordinates of data points to be smoothed.
+    - parameters: Configuration objects for hyperparameters.  These are used
+      to populate input slider elements.
+*/
 smoothers = {
 
     /* Trivial global mean smoother.
@@ -339,7 +328,7 @@ smoothers = {
     
         "label": "Polynomial Ridge Regression",
 
-        "smoother": make_polynomial_regression(polynomial_basis),
+        "smoother": make_polynomial_regression(basies.polynomial_basis),
 
         "parameters": [
             {"label": "Polynomial Degree", "name": "degree",
@@ -419,7 +408,7 @@ smoothers = {
 
         "label": "Piecewise Linear Spline (Fixed Knots)",
 
-        "smoother": make_spline_regression(pl_spline_basis),
+        "smoother": make_spline_regression(basies.pl_spline_basis),
 
         "parameters": [
             {"label": "Number of Knots", "name": "n",
@@ -433,7 +422,7 @@ smoothers = {
 
         "label": "Quadratic Spline (Fixed Knots)",
 
-        "smoother": make_spline_regression(quadratic_spline_basis),
+        "smoother": make_spline_regression(basies.quadratic_spline_basis),
 
         "parameters": [
             {"label": "Number of Knots", "name": "n",
@@ -447,7 +436,7 @@ smoothers = {
 
         "label": "Cubic Spline (Fixed Knots)",
 
-        "smoother": make_spline_regression(cubic_spline_basis),
+        "smoother": make_spline_regression(basies.cubic_spline_basis),
 
         "parameters": [
             {"label": "Number of Knots", "name": "n",
@@ -461,7 +450,7 @@ smoothers = {
 
         "label": "Natural Cubic Spline (Fixed Knots)",
 
-        "smoother": make_spline_regression(natural_cubic_spline_basis),
+        "smoother": make_spline_regression(basies.natural_cubic_spline_basis),
 
         "parameters": [
             {"label": "Number of Knots", "name": "n",
