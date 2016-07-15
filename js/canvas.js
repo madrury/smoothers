@@ -75,15 +75,6 @@ let canvas = function(elem, dimensions, margins) {
             });
         },
 
-        /* Remove everything from the canvas and clear all applicable state. */
-        clear: function() {
-            x = [];
-            y = [];
-            yhat = [];
-            svg.selectAll('circle').remove();
-            svg.selectAll('path#smoothed-path').remove();
-            hasbeensmoothed = false;
-        },
 
         /* Smooth the x, y data drawn on the canvas with a certain smoothing
          * algorithm in accord with certain parameters. 
@@ -121,12 +112,51 @@ let canvas = function(elem, dimensions, margins) {
             }
         },
 
+        draw_knots: function(knot_function, k) {
+            let kn = Number(k);
+            let knots = knot_function(kn);
+            console.log(knots);
+            let s = svg.selectAll()
+                .data(knots)
+                .enter()
+                .append("line")
+                    .attr("class", "knot-line")
+                    .attr("x1", d => xscale(d))
+                    .attr("y1", d => yscale(-1))
+                    .attr("x2", d => xscale(d))
+                    .attr("y2", d => yscale(2))
+                    .style("stroke-width", 2)
+                    .style("stroke-dasharray", "10, 10")
+                    .style("stroke", "red")
+                    .style("fill", "none");
+
+
+                /*
+                */
+                /*
+                .append("circle")
+                    .attr("cx", d => xscale(d))
+                    .attr("cy", d => yscale(d))
+                    .attr("r", 3)
+*/
+        },
+
         /* Clear the smoother drawn on the canvas and clear all applicable state. */
         clear_smooth: function() {
             yhat = []
             svg.selectAll('circle#data-smoother').remove();
             hasbeensmoothed = false;
-        }
+        },
+
+        /* Remove everything from the canvas and clear all applicable state. */
+        clear: function() {
+            x = [];
+            y = [];
+            yhat = [];
+            svg.selectAll('circle').remove();
+            svg.selectAll('path#smoothed-path').remove();
+            hasbeensmoothed = false;
+        },
 
     };
 };

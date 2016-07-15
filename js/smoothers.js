@@ -191,11 +191,15 @@ let evaluate_basis_expansion = function(basis, xs) {
 let make_spline_regression = function(spline_basis_function) {
     return function(parameters) {
         let n = Number(parameters["n"]);
-        let knots = numeric.linspace(0, 1, n + 2).slice(1, n + 1);
+        let knots = make_knots(n);
         let sp = spline_basis_function(knots);
         let lambda = Number(parameters["lambda"]);
         return make_basis_expansion_regression(sp, lambda);
     }
+}
+
+let make_knots = function(n) {
+    return numeric.linspace(0, 1, n + 2).slice(1, n + 1);
 }
 
 let make_polynomial_regression = function(polynomial_basis_function) {
@@ -218,7 +222,7 @@ let make_basis_expansion_regression = function(basis, lambda) {
             // standardize_matrix, avoiding duplication of some logic.
             let basis_expansion = [basis.map(s => s(newx))]
             let standardized_basis_expansion = 
-                standardize_matrix(basis_expansion, ridge.Xsd)[0]
+                standardize_matrix(basis_expansion, ridge.Xsd)[0];
             return (
                 numeric.dot(ridge.betas, standardized_basis_expansion) * ridge.ysd.sd
                 + ridge.ysd.mean); 
@@ -415,7 +419,9 @@ smoothers = {
              "min": 2, "max": 10, "step": 1, "default": 2},
             {"label": "Ridge Shrinkage", "name": "lambda",
              "min": 0, "max": .1, "step": .0001, "default": 0}
-        ]
+        ],
+
+        "knot_function": make_knots
     },
 
     "smooth-type-quad": {
@@ -429,7 +435,9 @@ smoothers = {
              "min": 2, "max": 10, "step": 1, "default": 2},
             {"label": "Ridge Shrinkage", "name": "lambda",
              "min": 0, "max": .01, "step": .00001, "default": 0}
-        ]
+        ],
+
+        "knot_function": make_knots
     },
 
     "smooth-type-spline": {
@@ -443,7 +451,9 @@ smoothers = {
              "min": 2, "max": 10, "step": 1, "default": 2},
             {"label": "Ridge Shrinkage", "name": "lambda",
              "min": 0, "max": .001, "step": .000001, "default": 0}
-        ]
+        ],
+
+        "knot_function": make_knots
     },
 
     "smooth-type-natural-spline": {
@@ -457,7 +467,9 @@ smoothers = {
              "min": 2, "max": 10, "step": 1, "default": 3},
             {"label": "Ridge Shrinkage", "name": "lambda",
              "min": 0, "max": .001, "step": .000001, "default": 0}
-        ]
+        ],
+
+        "knot_function": make_knots
     }
 
 

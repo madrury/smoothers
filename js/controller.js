@@ -37,6 +37,9 @@ let controller = function(canvas, smoother_ui, parameter_ui) {
             parameter_ui.add_parameters(smoother.parameters);
             let parameters = parameter_ui.get_selected_parameters();
             canvas.smooth(smoother, parameters);
+            if (smoother.hasOwnProperty("knot_function")) {
+                canvas.draw_knots(smoother.knot_function, parameters["n"])
+            }
         },
 
         field_parameter_ui_msg: function(msg) {
@@ -44,6 +47,9 @@ let controller = function(canvas, smoother_ui, parameter_ui) {
             let smoother = smoothers[smoother_name];
             let parameters = parameter_ui.get_selected_parameters();
             canvas.smooth(smoother, parameters);
+            if (smoother.hasOwnProperty("knot_function")) {
+                canvas.draw_knots(smoother.knot_function, parameters["n"])
+            }
         },
 
     }
