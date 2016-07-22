@@ -79,7 +79,7 @@ fit_ridge_regression = function(X, ys, lambda) {
 
 make_ridge_shrinkage_matrix = function(n, lambda) {
     let shrink_matrix = numeric.diag(numeric.rep([n + 1], lambda));
-    shrink_matrix[0][0] = 0;  // Don't shrink intercept.
+    shrink_matrix[0][0] = 0;  // Don't shrink linear term in basis expansions.
     return shrink_matrix
 }
 

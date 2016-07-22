@@ -127,25 +127,12 @@ let canvas = function(elem, dimensions, margins) {
                     .attr("y2", d => yscale(2))
                     .style("stroke-width", 2)
                     .style("stroke-dasharray", "10, 10")
-                    .style("stroke", "red")
+                    .style("stroke", "lightgrey")
                     .style("fill", "none");
-
-
-                /*
-                */
-                /*
-                .append("circle")
-                    .attr("cx", d => xscale(d))
-                    .attr("cy", d => yscale(d))
-                    .attr("r", 3)
-*/
         },
 
-        /* Clear the smoother drawn on the canvas and clear all applicable state. */
-        clear_smooth: function() {
-            yhat = []
-            svg.selectAll('circle#data-smoother').remove();
-            hasbeensmoothed = false;
+        clear_knots: function() {
+            svg.selectAll("line.knot-line").remove()
         },
 
         /* Remove everything from the canvas and clear all applicable state. */
@@ -155,6 +142,7 @@ let canvas = function(elem, dimensions, margins) {
             yhat = [];
             svg.selectAll('circle').remove();
             svg.selectAll('path#smoothed-path').remove();
+            svg.selectAll("line.knot-line").remove()
             hasbeensmoothed = false;
         },
 
