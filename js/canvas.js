@@ -115,7 +115,6 @@ let canvas = function(elem, dimensions, margins) {
         draw_knots: function(knot_function, k) {
             let kn = Number(k);
             let knots = knot_function(kn);
-            console.log(knots);
             let s = svg.selectAll()
                 .data(knots)
                 .enter()

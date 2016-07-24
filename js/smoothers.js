@@ -69,6 +69,7 @@ fit_ridge_regression = function(X, ys, lambda) {
     let XtX = numeric.dot(Xsdt, Xsd);
     let Xty = numeric.dot(Xsdt, ysd);
     let shrink_matrix = make_ridge_shrinkage_matrix(X[0].length, lambda);
+    console.log(shrink_matrix);
     let betas = numeric.solve(numeric.add(XtX, shrink_matrix), Xty);
     return {
         "betas": betas,

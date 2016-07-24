@@ -62,7 +62,8 @@
 
 
     let sui = smoother_ui(smoothers); 
-    sui.bind(document.getElementById("smooth-type"))
+    sui.bind(document.getElementById("smooth-type"),
+             document.getElementById("clear"))
     let pui = parameter_ui();
     pui.bind(document.getElementById("interface-hyperparamter-sliders"))
 

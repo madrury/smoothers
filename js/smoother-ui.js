@@ -10,7 +10,12 @@ let smoother_ui = function(smoothers) {
         /* Bind the smoother UI to a select input dom element, render the possible
          * selections, and then listen for changes. 
          */
-        bind: function(e) {
+        bind: function(e_select, e_clear) {
+            this.bind_select(e_select);
+            this.bind_clear(e_clear);
+        },
+
+        bind_select: function(e) {
             // TODO: assert that e is an select input.
             element = e;
             for(let smooth_type in smoothers) {
@@ -26,6 +31,12 @@ let smoother_ui = function(smoothers) {
                 let smoother = that.get_selected_smoother()
                 that.msg_queue.push({"smoother-change": smoother});
             })
+
+        },
+
+        bind_clear: function(e) {
+            // TODO: assert that e is a button.
+            console.log("binding button");
         },
 
         get_selected_smoother: function() {

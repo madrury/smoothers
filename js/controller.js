@@ -31,15 +31,19 @@ let controller = function(canvas, smoother_ui, parameter_ui) {
         },
 
         field_smoother_ui_msg: function(msg) {
-            let smoother_name = smoother_ui.get_selected_smoother();
-            let smoother = smoothers[smoother_name];
-            parameter_ui.clear();
-            parameter_ui.add_parameters(smoother.parameters);
-            let parameters = parameter_ui.get_selected_parameters();
-            canvas.clear_knots();
-            canvas.smooth(smoother, parameters);
-            if (smoother.hasOwnProperty("knot_function")) {
-                canvas.draw_knots(smoother.knot_function, parameters["n"]);
+            if ("smoother-change" in msg) {
+                let smoother_name = smoother_ui.get_selected_smoother();
+                let smoother = smoothers[smoother_name];
+                parameter_ui.clear();
+                parameter_ui.add_parameters(smoother.parameters);
+                let parameters = parameter_ui.get_selected_parameters();
+                canvas.clear_knots();
+                canvas.smooth(smoother, parameters);
+                if (smoother.hasOwnProperty("knot_function")) {
+                    canvas.draw_knots(smoother.knot_function, parameters["n"]);
+                }
+            } else if ("smoother-clear" in msg) {
+                console.log("Clearing smoother...");
             }
         },
 
