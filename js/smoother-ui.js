@@ -1,13 +1,14 @@
 let smoother_ui = function(smoothers) {
 
-    let element = null;
+    let element_select = null;
+    let element_clear = null;
 
     return {
 
         /* Message queue for the controller. */
         msg_queue: [],
 
-        /* Bind the smoother UI to a select input dom element, render the possible
+        /* Bind the smoother UI to a select input dom element_select, render the possible
          * selections, and then listen for changes. 
          */
         bind: function(e_select, e_clear) {
@@ -17,30 +18,34 @@ let smoother_ui = function(smoothers) {
 
         bind_select: function(e) {
             // TODO: assert that e is an select input.
-            element = e;
+            element_select = e;
             for(let smooth_type in smoothers) {
                 if(smoothers.hasOwnProperty(smooth_type)) {
-                    element.innerHTML += '<option value="' + smooth_type + '">' + 
+                    element_select.innerHTML += '<option value="' + smooth_type + '">' + 
                                          smoothers[smooth_type]["label"] + 
                                          '</option>';
                 }
             }
             // Bind a listener for change events.
             let that = this;
-            element.addEventListener("change", function() {
-                let smoother = that.get_selected_smoother()
+            element_select.addEventListener("change", function() {
+                let smoother = that.get_selected_smoother();
                 that.msg_queue.push({"smoother-change": smoother});
             })
-
         },
 
         bind_clear: function(e) {
             // TODO: assert that e is a button.
-            console.log("binding button");
+            element_clear = e;
+            let that = this;
+            element_clear.addEventListener("click", function() {
+                let smoother = that.get_selected_smoother();
+                that.msg_queue.push({"smoother-clear": null});
+            })
         },
 
         get_selected_smoother: function() {
-            return element.options[element.selectedIndex].value;
+            return element_select.options[element_select.selectedIndex].value;
         }
    
     };

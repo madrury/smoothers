@@ -43,7 +43,7 @@ let controller = function(canvas, smoother_ui, parameter_ui) {
                     canvas.draw_knots(smoother.knot_function, parameters["n"]);
                 }
             } else if ("smoother-clear" in msg) {
-                console.log("Clearing smoother...");
+                canvas.clear();
             }
         },
 
