@@ -20,7 +20,7 @@ let controller = function(canvas, smoother_ui, parameter_ui) {
                     msg = parameter_ui.msg_queue.pop();
                     that.field_parameter_ui_msg(msg);
                 }
-            });
+            }, 100);
         },
 
         field_canvas_msg: function(msg) {
@@ -32,6 +32,7 @@ let controller = function(canvas, smoother_ui, parameter_ui) {
 
         field_smoother_ui_msg: function(msg) {
             if ("smoother-change" in msg) {
+                console.log("smoother-change");
                 let smoother_name = smoother_ui.get_selected_smoother();
                 let smoother = smoothers[smoother_name];
                 parameter_ui.clear();
