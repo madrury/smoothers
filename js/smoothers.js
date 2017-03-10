@@ -316,11 +316,6 @@ let make_basis_expansion_regression = function(basis, lambda) {
 */
 let make_spline_regression = function(spline_basis_function) {
 
-    /* Make a set of equally spaced knots in the interval [0, 1] */
-    let make_knots = function(n) {
-        return numeric.linspace(0, 1, n + 2).slice(1, n + 1);
-    }
-
     return function(parameters) {
         let n = Number(parameters["n"]);
         let knots = make_knots(n);
@@ -328,6 +323,11 @@ let make_spline_regression = function(spline_basis_function) {
         let lambda = Number(parameters["lambda"]);
         return make_basis_expansion_regression(sp, lambda);
     }
+}
+
+/* Make a set of equally spaced knots in the interval [0, 1] */
+let make_knots = function(n) {
+    return numeric.linspace(0, 1, n + 2).slice(1, n + 1);
 }
 
 /* Consume a basis expansion representing a polynomial basis, and return a

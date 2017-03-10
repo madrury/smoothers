@@ -27,7 +27,8 @@ let smoother_ui = function(smoothers) {
            DOM, populate with all the possible smoothing algoriths, and create
            an event listener to handle change events.
         */
-        bind_select: function(element_select) {
+        bind_select: function(e) {
+            element_select = e;
             /* Create an <option> for each supported smoothing algorithm. */
             for(let smooth_type in smoothers) {
                 if(smoothers.hasOwnProperty(smooth_type)) {
@@ -47,10 +48,11 @@ let smoother_ui = function(smoothers) {
         /* Get the name of the smoothing algorithm currently selected. */
         get_selected_smoother: function() {
             return element_select.options[element_select.selectedIndex].value;
-        }
+        },
 
         /* Bind the canvas clear component to a button element in the DOM. */ 
-        bind_clear: function(element_clear) {
+        bind_clear: function(e) {
+            element_clear = e;
             let that = this;
             element_clear.addEventListener("click", function() {
                 let smoother = that.get_selected_smoother();
