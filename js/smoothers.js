@@ -1,6 +1,4 @@
-// Helper functions
-
-// Dot product of two vectors
+/* Compute the dot product of two vectors. */
 let dot = function(v1, v2) {
     let s = 0;
     for(let i = 0; i < v1.length; i++) {
@@ -9,14 +7,16 @@ let dot = function(v1, v2) {
     return s
 }
 
-// Wrap a slope m and an intercept b into a linear function
+/* Construct a linear function given a slope and an intercept. */
 let linear_function = function(m, b) {
     return function(x) {
         return b + m * x;
     }
 }
 
-// Weighted mean of x with weights w.  Weights may be un-normalized.
+/* Compute the weighted mean of x with weights w.  Weights may be
+   un-normalized.
+*/
 let wmean = function(x, w) {
     let r = [];
     for(i = 0; i < x.length; i++) {
@@ -25,15 +25,19 @@ let wmean = function(x, w) {
     return d3.sum(r) / d3.sum(w);
 }
 
-// Simple linear regression on data (ys, xs).
+/* Fit a simple linear regression on data (ys, xs).
+
+   This returns a linear function, i.e. the prediction function from the
+   fit linear regression.
+*/
 let linear_regressor = function(xs, ys) {
     let xmean = d3.mean(xs);
     let ymean = d3.mean(ys);
     let xymean = d3.mean(d3.zip(xs, ys).map(p => p[0]*p[1]));
     let xsqmean = d3.mean(d3.zip(xs, xs).map(p => p[0]*p[1]));
     let beta = (xymean - xmean * ymean) / (xsqmean - xmean * xmean);
-    let betaz = ymean - beta * xmean;
-    return linear_function(beta, betaz);
+    let intercept = ymean - beta * xmean;
+    return linear_function(beta, intercept);
 };
 
 // Simple linear regression with sample weights.
@@ -47,8 +51,9 @@ let weighted_linear_regressor = function(xs, ys, ws) {
     return linear_function(beta, betaz)
 };
 
-// Convert a function that maps numbers to numbers into one which maps
-// arrays to arrays.
+/* Given a function from numbers to numbers, return one that maps arrays to
+   arrays through mapping.
+*/
 let vectorize = function(f) {
     return function(arr) {
         return arr.map(f)
@@ -56,10 +61,68 @@ let vectorize = function(f) {
 }
 
 
+/*******************************/
 /* Ridge Regression functions. */
+/*******************************/
 
-fit_ridge_regression = function(X, ys, lambda) {
-    // Standarzide the predictors and response.
+/* Fit a ridge regression to data X and response ys with regularization
+   strength lambda.
+
+   This returns an object containing the data needed to score the fitted
+   regression:
+   
+   {
+       "betas": <array of standardized parameter estiamtes>,
+       "Xsd": <standardizer data for X>,
+       "ysd": <standardizer data for y>
+   }
+*/
+let fit_ridge_regression = function(X, ys, lambda) {
+
+    /* Construct a square matrix of size n with lambdas along the main
+       diagonal, and a zero in the (0, 0) position.  This type of matrix is
+       useful in ridge regression.
+    */
+    let make_ridge_shrinkage_matrix = function(n, lambda) {
+        let shrink_matrix = numeric.diag(numeric.rep([n + 1], lambda));
+        /* Dont shrink the linear term in basis expansion regressions. */
+        shrink_matrix[0][0] = 0;
+        return shrink_matrix
+    }
+
+    /* Compute the translation and scale factors necessary to standardize the
+      columns of a matrix.
+
+      This returns an object with two attributes:
+
+      { "mean": [<array of translation factors>],
+        "sd": [<array of scale factors>] }
+    */
+    let compute_matrix_standardization = function(X) {
+        let standardization = {"mean": [], "sd": []};
+        /* It is easier to iterate over the rows of a matrix than the columns. */
+        let Xt = numeric.transpose(X);
+        for(let i = 0; i < Xt.length; i++) {
+            let standardized_row = compute_vector_standardization(Xt[i]);
+            standardization.mean.push(standardized_row.mean);
+            standardization.sd.push(standardized_row.sd);
+        }
+        return standardization;
+    }
+
+    /* Compute the translation and scale factor necessary to standardize a
+      vector.
+
+      This returns an object with two attributes:
+
+      {"mean": <mean of vector>, "sd": <standard deviation of vector>}
+    */
+    let compute_vector_standardization = function(v) {
+        let mean = d3.mean(v);
+        let sd = d3.deviation(v);
+        return {'mean': mean, 'sd': sd}
+    }
+
     let X_standardization = compute_matrix_standardization(X);
     let Xsd = standardize_matrix(X, X_standardization);
     let y_standardization = compute_vector_standardization(ys);
@@ -78,31 +141,11 @@ fit_ridge_regression = function(X, ys, lambda) {
     }
 }
 
-make_ridge_shrinkage_matrix = function(n, lambda) {
-    let shrink_matrix = numeric.diag(numeric.rep([n + 1], lambda));
-    shrink_matrix[0][0] = 0;  // Don't shrink linear term in basis expansions.
-    return shrink_matrix
-}
-
-let compute_matrix_standardization = function(X) {
-    let standardization = {"mean": [], "sd": []};
-    // Easier to iterate over the rows of a matrix than the columns.
-    let Xt = numeric.transpose(X);
-    for(let i = 0; i < Xt.length; i++) {
-        let standardized_row = compute_vector_standardization(Xt[i]);
-        standardization.mean.push(standardized_row.mean);
-        standardization.sd.push(standardized_row.sd);
-    }
-    return standardization;
-}
-
-let compute_vector_standardization = function(v) {
-    let mean = d3.mean(v);
-    let sd = d3.deviation(v);
-    return {'mean': mean, 'sd': sd}
-}
-
+/* Apply standardization data to a matrix.  Returns a standardized version
+   of the matrix, i.e. a matrix with standardized columns.
+*/
 let standardize_matrix = function(X, standardization) {
+    /* It is easier to iterate over the rows of a matrix than the columns. */
     let Xt = numeric.transpose(X);
     let S = []
     for(let i = 0; i < Xt.length; i++) {
@@ -116,15 +159,25 @@ let standardize_matrix = function(X, standardization) {
     return numeric.transpose(S);
 }
 
+/* Apply standardization data to a vector. */
 let standardize_vector = function(v, standardization) {
     return v.map(x => (x - standardization.mean) / standardization.sd)
 }
 
 
-/* Basies for fitting basis expansion models. */
+/* Basies for fitting basis expansion models. 
 
+   A basis is a linearly independent sequence of functions [f_1, f_2, ..., f_k].
+   A basis expansion is a transformation of a vector v into a matrix..  The
+   columns of the basis expanded matrix are created by mapping each of the
+   functions in the basis expansion over the vector in turn.
+*/
 let basies = {
 
+    /* Polynomial basis expansion.
+
+         x -> [1, x, x^2, ...]
+    */
     polynomial_basis: function(d) {
         let basis = [];
         for(let i = 1; i <= d; i++) {
@@ -133,6 +186,15 @@ let basies = {
         return basis;
     },
 
+    /* Piecewise linear spline basis.
+
+       This basis depends on a sequence of knots: k_1, k_2, ...
+       The basis expansion is given by the sequence of functions
+       x -> max(0, x - k_i).
+
+       Models fit using a PL basis expansion as predictors result in piecewise
+       linear prediction functions.
+    */
     pl_spline_basis: function(knots) {
         let basis = [];
         basis.push(x => x);
@@ -142,6 +204,13 @@ let basies = {
         return basis;
     },
 
+    /* Quadratic spline basis function.
+
+       This basis depends on a sequence of knots: k_1, k_2, ...
+
+       Models fit with a quadratic spline basis expansion as predictors reult
+       in a peicewise quadratic prediction function.
+    */ 
     quadratic_spline_basis: function(knots) {
         let basis = [];
         basis.push(x => x);
@@ -152,6 +221,13 @@ let basies = {
         return basis
     },
 
+    /* Cubic spline (unrestricted) basis function.
+
+       This basis depends on a sequence of knots: k_1, k_2, ...
+
+       Models fit with a cubic spline basis expansion as predictors reult
+       in a peicewise cubic prediction function.
+    */ 
     cubic_spline_basis: function(knots) {
         let basis = [];
         basis.push(x => x);
@@ -163,6 +239,15 @@ let basies = {
         return basis
     },
 
+    /* Natural cubic spline (unrestricted) basis function.
+
+       This basis depends on a sequence of knots: k_1, k_2, ...
+
+       Models fit with a natural cubic spline basis expansion as predictors
+       reult in a peicewise cubic prediction function, but with the extra
+       feature that the function is linear outside of the leftmost and
+       rightmost knots.
+    */ 
     natural_cubic_spline_basis: function(knots) {
         n_knots = knots.length;
         let basis = [];
@@ -185,34 +270,23 @@ let basies = {
     }
 }
 
-let evaluate_basis_expansion = function(basis, xs) {
-    return xs.map(x => basis.map(s => s(x)))
-}
 
-let make_spline_regression = function(spline_basis_function) {
-    return function(parameters) {
-        let n = Number(parameters["n"]);
-        let knots = make_knots(n);
-        let sp = spline_basis_function(knots);
-        let lambda = Number(parameters["lambda"]);
-        return make_basis_expansion_regression(sp, lambda);
-    }
-}
+/* Construct a regression operator given a basis of functions, and a
+   regularization strength.
 
-let make_knots = function(n) {
-    return numeric.linspace(0, 1, n + 2).slice(1, n + 1);
-}
-
-let make_polynomial_regression = function(polynomial_basis_function) {
-    return function(parameters) {
-        let d = Number(parameters["degree"]);
-        let p = polynomial_basis_function(d);
-        let lambda = Number(parameters["lambda"]);
-        return make_basis_expansion_regression(p, lambda);
-    }
-}
-
+   This constructs a function witht he following signature:
+       (xs, ys) => (x => _)
+   I.e. a function that consumes data, and returns a prediction function.
+   The prediction function is constructed by fitting a ridge regression
+   on the data (xs, ys) after applying the given basis expansion.
+*/
 let make_basis_expansion_regression = function(basis, lambda) {
+
+    /* Map a basis expansion across a vector. The result is a vector. */
+    let evaluate_basis_expansion = function(basis, xs) {
+        return xs.map(x => basis.map(s => s(x)))
+    }
+
     return function(xs, ys) {
         let X = evaluate_basis_expansion(basis, xs);
         let ridge = fit_ridge_regression(X, ys, lambda);
@@ -232,6 +306,47 @@ let make_basis_expansion_regression = function(basis, lambda) {
     };
 }
 
+/* Consume a basis expansion representing a spline basis, and return a function
+   that consumes a object of parameters (the only parameter being the number of
+   knots), and returns a basis expansion regression (See definition above).
+
+   I.e., the signature of this function is:
+
+   basis => (parameters => ((xs, ys) => (x => _)))
+*/
+let make_spline_regression = function(spline_basis_function) {
+
+    /* Make a set of equally spaced knots in the interval [0, 1] */
+    let make_knots = function(n) {
+        return numeric.linspace(0, 1, n + 2).slice(1, n + 1);
+    }
+
+    return function(parameters) {
+        let n = Number(parameters["n"]);
+        let knots = make_knots(n);
+        let sp = spline_basis_function(knots);
+        let lambda = Number(parameters["lambda"]);
+        return make_basis_expansion_regression(sp, lambda);
+    }
+}
+
+/* Consume a basis expansion representing a polynomial basis, and return a
+   function that consumes a object of parameters (the only parameter being the
+   degree), and returns a basis expansion regression (See definition above).
+
+   I.e., the signature of this function is:
+
+   basis => (parameters => ((xs, ys) => (x => _)))
+*/
+let make_polynomial_regression = function(polynomial_basis_function) {
+    return function(parameters) {
+        let d = Number(parameters["degree"]);
+        let p = polynomial_basis_function(d);
+        let lambda = Number(parameters["lambda"]);
+        return make_basis_expansion_regression(p, lambda);
+    }
+}
+
 
 
 /* A namespace for scatterplot smoother objects.
@@ -241,12 +356,14 @@ let make_basis_expansion_regression = function(basis, lambda) {
     - label: A short description of the smoother.  Appears in a select input
       field.
     - smoother: A smoother function.  Each smoother function has the form
-          f(parameters)(xs, ys)
+
+          parameters => ((xs, ys) => (x => _))
+
       where parameters is a dictionary containing the values of huperparameters
       for the smoother, and xs, ys are equal length vectors of x-coordinates
       and y-coordinates of data points to be smoothed.
     - parameters: Configuration objects for hyperparameters.  These are used
-      to populate input slider elements.
+      to populate input slider elements in the user interface.
 */
 smoothers = {
 
@@ -290,9 +407,7 @@ smoothers = {
                 let xsort = psort.map(p => p[0]);
                 let ysort = psort.map(p => p[1]);
                 let mean_of_symm_nbrd = function(newx) {
-                    // TODO: Abstract out finding the local neighbourhood.
                     let pos_in_array = d3.bisect(xsort, newx);
-                    // TODO: Check that you lined up the fenceposts.
                     let cutoffs = [
                         Math.max(0, pos_in_array - k), 
                         Math.min(xsort.length - 1, pos_in_array + k)
@@ -309,7 +424,11 @@ smoothers = {
         ]
     },
 
-    /* Simple linear regression smoother. */
+    /* Simple linear regression smoother. 
+    
+    Hyperparameters:
+        None.
+    */
     "smooth-type-linreg": {
 
         "label": "Linear Regression",
@@ -325,26 +444,11 @@ smoothers = {
 
     },
 
+    /* Gaussian kernel smoother.
 
-    /* Multi linear regression with a quadratic basis expansion and reidge
-     *  regression shrinkage. 
-     */
-    "smooth-type-polyreg": {
-    
-        "label": "Polynomial Ridge Regression",
-
-        "smoother": make_polynomial_regression(basies.polynomial_basis),
-
-        "parameters": [
-            {"label": "Polynomial Degree", "name": "degree",
-             "min": 1, "max": 20, "step": 1, "default": 2},
-            {"label": "Ridge Shrinkage", "name": "lambda",
-             "min": 0, "max": .01, "step": .00001, "default": 0}
-        ]
-
-    },
-
-    // Gaussian kernel smoother.
+    Hyperparmeters:
+        lambda: Width of the gaussian kernel.
+    */
     "smooth-type-gaussk": {
 
         "label": "Gaussian Kernel Smoother",
@@ -371,11 +475,16 @@ smoothers = {
     },
 
     /* Running line smoother.
-     * To calculate the smoothed value of y at a given x, first take together the
-     * k data points closest to x.  Then fit a simple linear regression to these k
-     * data points.  The smoothed value of y is the prediction made from this
-     * linear regressor.
-     */
+
+       To calculate the smoothed value of y at a given x, we first take
+       together the k data points closest to x.  Then fit a simple linear
+       regression to these k data points.  The smoothed value of y is the value
+       f(x), where f is the prediction function of this linear regression.
+
+    Hyperparameters:
+        k: The number of neighbours to consider when fitting the local linear
+           regressions.
+    */
     "smooth-type-runline": {
 
         "label": "Running Line",
@@ -409,6 +518,33 @@ smoothers = {
 
     },
 
+    /* Ridge regression with a polynomial basis expansion.
+
+    Hyperparameters:
+        degree: The maximum degree of polynomial in the basis.
+        lambda: The ridge regularization strength.
+    */
+    "smooth-type-polyreg": {
+    
+        "label": "Polynomial Ridge Regression",
+
+        "smoother": make_polynomial_regression(basies.polynomial_basis),
+
+        "parameters": [
+            {"label": "Polynomial Degree", "name": "degree",
+             "min": 1, "max": 20, "step": 1, "default": 2},
+            {"label": "Ridge Shrinkage", "name": "lambda",
+             "min": 0, "max": .01, "step": .00001, "default": 0}
+        ]
+
+    },
+
+    /* Ridge regression with a piecewise linear basis expansion.
+
+    Hyperparameters:
+        n: The number of knots to use in the PL basis.
+        lambda: The ridge regularization strength.
+    */
     "smooth-type-pl": {
 
         "label": "Piecewise Linear Spline (Fixed Knots)",
@@ -425,6 +561,12 @@ smoothers = {
         "knot_function": make_knots
     },
 
+    /* Ridge regression with a piecewise quadratic basis expansion.
+
+    Hyperparameters:
+        n: The number of knots to use in the basis.
+        lambda: The ridge regularization strength.
+     */
     "smooth-type-quad": {
 
         "label": "Quadratic Spline (Fixed Knots)",
@@ -441,6 +583,12 @@ smoothers = {
         "knot_function": make_knots
     },
 
+    /* Ridge regression with a piecewise cubic (unrestricted) basis expansion.
+
+    Hyperparameters:
+        n: The number of knots to use in the basis.
+        lambda: The ridge regularization strength.
+    */
     "smooth-type-spline": {
 
         "label": "Cubic Spline (Fixed Knots)",
@@ -457,6 +605,12 @@ smoothers = {
         "knot_function": make_knots
     },
 
+    /* Ridge regression with a natural cubic spline basis expansion.
+
+    Hyperparameters:
+        n: The number of knots to use in the basis.
+        lambda: The ridge regularization strength.
+    */
     "smooth-type-natural-spline": {
 
         "label": "Natural Cubic Spline (Fixed Knots)",
