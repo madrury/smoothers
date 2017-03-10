@@ -1,3 +1,7 @@
+/*********************/
+/* Helper Functions. */
+/*********************/
+
 /* Compute the dot product of two vectors. */
 let dot = function(v1, v2) {
     let s = 0;
@@ -61,9 +65,9 @@ let vectorize = function(f) {
 }
 
 
-/*******************************/
-/* Ridge Regression functions. */
-/*******************************/
+/*******************************************/
+/* Ridge Regression with Basis Expansions. */
+/*******************************************/
 
 /* Fit a ridge regression to data X and response ys with regularization
    strength lambda.
@@ -270,7 +274,6 @@ let basies = {
     }
 }
 
-
 /* Construct a regression operator given a basis of functions, and a
    regularization strength.
 
@@ -348,7 +351,6 @@ let make_polynomial_regression = function(polynomial_basis_function) {
 }
 
 
-
 /* A namespace for scatterplot smoother objects.
 
   Each smoother object has three attributes:
@@ -365,7 +367,7 @@ let make_polynomial_regression = function(polynomial_basis_function) {
     - parameters: Configuration objects for hyperparameters.  These are used
       to populate input slider elements in the user interface.
 */
-smoothers = {
+let smoothers = {
 
     /* Trivial global mean smoother.
 
