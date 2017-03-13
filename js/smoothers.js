@@ -11,6 +11,11 @@ let dot = function(v1, v2) {
     return s
 }
 
+let sum_of_squared_deviations = function(xs) {
+    let m = d3.mean(xs);
+    return d3.sum(xs.map(t => t - m).map(t => t*t));
+}
+
 /* Construct a linear function given a slope and an intercept. */
 let linear_function = function(m, b) {
     return function(x) {
@@ -363,6 +368,76 @@ let make_polynomial_regression = function(polynomial_basis_function) {
     }
 }
 
+
+/********************/
+/* Regression Trees */
+/********************/
+
+let make_regression_tree = function(parameters) {
+    let depth = Number(parameters["depth"]);
+    return function(xs, ys) {
+        /* We sort the data once up front, it will stay sorted as we
+           decend the tree.
+        */
+        let [xs, ys] = sort_data(xs, ys);
+        let tree = fit_regression_tree(xs, ys, depth);
+        let regression_tree_predict_pointwise = function(x) {
+            return score_regression_tree(x, tree);
+        }
+        return vectorize(regression_tree_predict_pointwise);
+    }
+}
+
+let fit_regression_tree = function(xs, ys, depth) {
+    if(depth === 0) {
+        /* Base case step. */
+        let tree = make_tree_data();
+        tree.is_leaf = true;
+        tree.value = d3.mean(ys);
+        return tree;
+    } else {
+        /* Recursive step. */
+        let split = compute_split_point(xs, ys);
+        let condition = function(x) {return x <= split}
+        let ps = d3.zip(xs, ys);
+        let left_data = ps.filter(p => condition(p[0]));
+        let right_data = ps.filter(p => !condition(p[0]));
+        /* Construct and return the tree */
+        let tree = make_tree_data();
+        tree.left_child_condition = condition;
+        tree.left_child = fit_regression_tree(
+            unzip(left_data, 0), unzip(left_data, 1), depth - 1);
+        tree.right_child = fit_regression_tree(
+            unzip(right_data, 0), unzip(right_data, 1), depth - 1);
+        return tree;
+    }
+}
+
+let make_tree_data = function() {
+    return {
+        "is_leaf": false,
+        "left_child_condition": null,
+        "left_child": null,
+        "right_child": null,
+        "value": null
+    }
+}
+
+let compute_split_point = function(xs, ys) {
+    let best_sosd = Infinity;
+    let best_split = null;
+    for(let i = 1; i <= ys.length; i++) {
+        let left_ys = ys.slice(0, i);
+        let right_ys = ys.slice(i, ys.length);
+        let this_sosd = sum_of_squared_deviations(left_ys) +
+                        sum_of_squared_deviations(right_ys);
+        if(this_sosd <= best_sosd) {
+            best_sosd  = this_sosd;
+            best_split = (xs[i-1] + xs[i]) / 2;
+        }
+    }
+    return best_split;
+}
 
 /* A namespace for scatterplot smoother objects.
 
