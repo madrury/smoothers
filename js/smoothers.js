@@ -725,8 +725,19 @@ let smoothers = {
         ],
 
         "knot_function": make_knots
-    }
+    },
 
+    "smooth-type-regression-tree": {
+    
+        "label": "Regression Tree",
+
+        "smoother": make_regression_tree,
+
+        "parameters": [
+            {"label": "Maximum Tree Depth", "name": "depth",
+             "min": 0, "max": 7, "step": 1, "default": 1}
+        ]
+    },
 
 /*
     // Locally weighted linear regression smoother.
