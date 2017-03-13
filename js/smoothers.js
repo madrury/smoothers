@@ -379,8 +379,8 @@ let make_regression_tree = function(parameters) {
         /* We sort the data once up front, it will stay sorted as we
            decend the tree.
         */
-        let [xs, ys] = sort_data(xs, ys);
-        let tree = fit_regression_tree(xs, ys, depth);
+        let [xsorted, ysorted] = sort_data(xs, ys);
+        let tree = fit_regression_tree(xsorted, ysorted, depth);
         let regression_tree_predict_pointwise = function(x) {
             return score_regression_tree(x, tree);
         }
@@ -437,6 +437,18 @@ let compute_split_point = function(xs, ys) {
         }
     }
     return best_split;
+}
+
+let score_regression_tree = function(x, tree) {
+    if(tree.is_leaf == true) {
+        return tree.value;
+    } else {
+        if(tree.left_child_condition(x)) {
+            return score_regression_tree(x, tree.left_child);
+        } else {
+            return score_regression_tree(x, tree.right_child);
+        }
+    }
 }
 
 /* A namespace for scatterplot smoother objects.
