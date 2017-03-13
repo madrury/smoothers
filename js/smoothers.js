@@ -11,11 +11,6 @@ let dot = function(v1, v2) {
     return s
 }
 
-let sum_of_squared_deviations = function(xs) {
-    let m = d3.mean(xs);
-    return d3.sum(xs.map(t => t - m).map(t => t*t));
-}
-
 /* Construct a linear function given a slope and an intercept. */
 let linear_function = function(m, b) {
     return function(x) {
@@ -373,6 +368,11 @@ let make_polynomial_regression = function(polynomial_basis_function) {
 /* Regression Trees */
 /********************/
 
+/* Consturct a function that fits regression trees of a specified depth.
+
+   Returns a function ((xs, ys) => (x => _)) that fits a regression tree
+   to the supplied xs, ys data.
+*/
 let make_regression_tree = function(parameters) {
     let depth = Number(parameters["depth"]);
     return function(xs, ys) {
@@ -388,10 +388,30 @@ let make_regression_tree = function(parameters) {
     }
 }
 
+/* Fit a regression tree to data of a specified depth.
+
+   Returns a simple object (informally of type tree) representing a fit
+   regression tree.  A tree object has the following shape.
+
+    {
+        "is_leaf": <boolean: is this tree a lead node?>,
+        "value": <float: The value to predict in this node, if a leaf>,
+        "left_child_condition": <function: f(x) answers "is x in the reigon
+                                 defined by the left child node>
+        "left_child": <tree: A fit regression tree to those xs, ys in the left
+                       child>,
+        "right_child": <tree: A fit regression tree to those xs, ys in the
+                        right child>,
+    }
+
+    The field "value" is only defined for lead nodes.  The fields
+    "left_child_condition", "left_child", and "right_child" are only defined if
+    *not* a lead node.
+*/
 let fit_regression_tree = function(xs, ys, depth) {
     if(depth === 0) {
         /* Base case step. */
-        let tree = make_tree_data();
+        let tree = make_tree_object();
         tree.is_leaf = true;
         tree.value = d3.mean(ys);
         return tree;
@@ -403,7 +423,7 @@ let fit_regression_tree = function(xs, ys, depth) {
         let left_data = ps.filter(p => condition(p[0]));
         let right_data = ps.filter(p => !condition(p[0]));
         /* Construct and return the tree */
-        let tree = make_tree_data();
+        let tree = make_tree_object();
         tree.left_child_condition = condition;
         tree.left_child = fit_regression_tree(
             unzip(left_data, 0), unzip(left_data, 1), depth - 1);
@@ -413,7 +433,9 @@ let fit_regression_tree = function(xs, ys, depth) {
     }
 }
 
-let make_tree_data = function() {
+
+/* Construct an empty tree object. */
+let make_tree_object = function() {
     return {
         "is_leaf": false,
         "left_child_condition": null,
@@ -423,14 +445,22 @@ let make_tree_data = function() {
     }
 }
 
+/* Compute the optimal split point in data xs, ys.
+
+   The split point is the midpoint between two data points, so that grouping
+   the ys data into those left of and right of the split point produces the
+   least total varaince.
+
+   Note: This function assumes that the xs, ys data is sorted in increasing
+         xs order.
+*/
 let compute_split_point = function(xs, ys) {
     let best_sosd = Infinity;
     let best_split = null;
     for(let i = 1; i <= ys.length; i++) {
         let left_ys = ys.slice(0, i);
         let right_ys = ys.slice(i, ys.length);
-        let this_sosd = sum_of_squared_deviations(left_ys) +
-                        sum_of_squared_deviations(right_ys);
+        let this_sosd = d3.variance(left_ys) + d3.variance(right_ys);
         if(this_sosd <= best_sosd) {
             best_sosd  = this_sosd;
             best_split = (xs[i-1] + xs[i]) / 2;
@@ -439,6 +469,7 @@ let compute_split_point = function(xs, ys) {
     return best_split;
 }
 
+/* Generate a predictor from a regression tree at a point x */
 let score_regression_tree = function(x, tree) {
     if(tree.is_leaf == true) {
         return tree.value;
@@ -727,6 +758,12 @@ let smoothers = {
         "knot_function": make_knots
     },
 
+    /* Regression tree smoother.
+
+    Hyperparameters:
+        depth: The maximum depth in the fit tree.  The final tree has 2**depth
+               leaf nodes.
+    */
     "smooth-type-regression-tree": {
     
         "label": "Regression Tree",
