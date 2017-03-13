@@ -44,7 +44,7 @@ let linear_regressor = function(xs, ys) {
     return linear_function(beta, intercept);
 };
 
-// Simple linear regression with sample weights.
+/* Simple linear regression with sample weights. */
 let weighted_linear_regressor = function(xs, ys, ws) {
     let xmean = wmean(xs, ws);
     let ymean = wmean(ys, ws);
@@ -62,6 +62,19 @@ let vectorize = function(f) {
     return function(arr) {
         return arr.map(f)
     }
+}
+
+/* Undo a zip operation */
+let unzip = function(ps, i) {
+    return ps.map(p => p[i]);
+}
+
+/* Sort ordered pairs of x, y data by x. */
+let sort_data = function(xs, ys) {
+    let psort = d3.zip(xs, ys).sort(function(a, b) {return a[0] - b[0]});
+    let xsort = unzip(psort, 0);
+    let ysort = unzip(psort, 1);
+    return [xsort, ysort];
 }
 
 
@@ -405,9 +418,7 @@ let smoothers = {
             let k = Number(parameters["k"]);
             return function(xs, ys) {
                 // Reorder xs and ys so that xs is in increasing order
-                let psort = d3.zip(xs, ys).sort(function(a, b) {return a[0] - b[0]});
-                let xsort = psort.map(p => p[0]);
-                let ysort = psort.map(p => p[1]);
+                let [xsort, ysort] = sort_data(xs, ys);
                 let mean_of_symm_nbrd = function(newx) {
                     let pos_in_array = d3.bisect(xsort, newx);
                     let cutoffs = [
