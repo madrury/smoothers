@@ -375,7 +375,7 @@ let make_polynomial_regression = function(polynomial_basis_function) {
 /* Regression Trees */
 /********************/
 
-/* Consturct a function that fits regression trees of a specified depth.
+/* Construct a function that fits regression trees of a specified depth.
 
    Returns a function ((xs, ys) => (x => _)) that fits a regression tree
    to the supplied xs, ys data.
@@ -411,7 +411,7 @@ let make_regression_tree = function(parameters) {
                         right child>,
     }
 
-    The field "value" is only defined for lead nodes.  The fields
+    The field "value" is only defined for leaf nodes.  The fields
     "left_child_condition", "left_child", and "right_child" are only defined if
     *not* a lead node.
 */
@@ -495,6 +495,11 @@ let score_regression_tree = function(x, tree) {
 /* Gradient Boosting */
 /*********************/
 
+/* Construct a function that fits a gradient boosted regression.
+
+   Returns a function ((xs, ys) => (x => _)) that fits a gradient booster
+   to the supplied xs, ys data.
+*/
 let make_boosted_model = function(parameters) {
     let learning_rate = Number(parameters["learning_rate"]);
     let n_trees = Number(parameters["n_trees"]);
@@ -509,6 +514,18 @@ let make_boosted_model = function(parameters) {
     }
 }
 
+/* Fit a gradient boosted regression to data of a specified depth.
+
+   Returns a simple object (informally of type booster) representing a fit
+   boosted model.  A booster object has the following shape.
+
+   {
+       "intercept": <The mean of the training data, used as the 0'th
+                     boosting stage>,
+       "trees": [<Array of tree objects, the boosting stages>],
+       "learning_rate": <The learning rate of the boosted model>
+   }
+*/
 let fit_boosted_model = function(xs, ys, n_trees, learning_rate, tree_depth) {
     let boosted_model = new_boosted_model();
     boosted_model.learning_rate = learning_rate;
@@ -527,10 +544,12 @@ let fit_boosted_model = function(xs, ys, n_trees, learning_rate, tree_depth) {
     return boosted_model;
 }
 
+/* Construct a booster object. */
 let new_boosted_model = function() {
     return {"intercept": null, "trees": [], "learning_rate": null};
 }
 
+/* Make predictions on a new datapoint from a booster object. */
 let score_boosted_model = function(x, booster) {
     let y_hat = booster.intercept;
     for(let i = 0; i < booster.trees.length; i++) {
@@ -837,6 +856,13 @@ let smoothers = {
         ]
     },
 
+    /* Gradient boosting to minimize the sum of squared errors.
+
+    Hyperparameters:
+        n_trees: The number of boosting stages.
+        learning_rate: Learning rate.
+        tree_depth: The maximum depth of the individual trees.
+    */
     "smooth-type-boosting": {
     
         "label": "Gradient Boosting Regression",
