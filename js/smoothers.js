@@ -1,3 +1,7 @@
+/*********************/
+/* Helper Functions. */
+/*********************/
+
 /* Compute the dot product of two vectors. */
 let dot = function(v1, v2) {
     let s = 0;
@@ -25,6 +29,13 @@ let wmean = function(x, w) {
     return d3.sum(r) / d3.sum(w);
 }
 
+/* The sum of squared errors of a data set when making a prediction equal
+   to the mean.
+*/
+let sum_of_squared_errors = function(xs) {
+    return xs.map(x => x - d3.mean(xs)).map(x => x*x).reduce((a, b) => a + b, 0);
+}
+
 /* Fit a simple linear regression on data (ys, xs).
 
    This returns a linear function, i.e. the prediction function from the
@@ -40,7 +51,7 @@ let linear_regressor = function(xs, ys) {
     return linear_function(beta, intercept);
 };
 
-// Simple linear regression with sample weights.
+/* Simple linear regression with sample weights. */
 let weighted_linear_regressor = function(xs, ys, ws) {
     let xmean = wmean(xs, ws);
     let ymean = wmean(ys, ws);
@@ -60,10 +71,23 @@ let vectorize = function(f) {
     }
 }
 
+/* Undo a zip operation */
+let unzip = function(ps, i) {
+    return ps.map(p => p[i]);
+}
 
-/*******************************/
-/* Ridge Regression functions. */
-/*******************************/
+/* Sort ordered pairs of x, y data by x. */
+let sort_data = function(xs, ys) {
+    let psort = d3.zip(xs, ys).sort(function(a, b) {return a[0] - b[0]});
+    let xsort = unzip(psort, 0);
+    let ysort = unzip(psort, 1);
+    return [xsort, ysort];
+}
+
+
+/*******************************************/
+/* Ridge Regression with Basis Expansions. */
+/*******************************************/
 
 /* Fit a ridge regression to data X and response ys with regularization
    strength lambda.
@@ -270,7 +294,6 @@ let basies = {
     }
 }
 
-
 /* Construct a regression operator given a basis of functions, and a
    regularization strength.
 
@@ -348,6 +371,124 @@ let make_polynomial_regression = function(polynomial_basis_function) {
 }
 
 
+/********************/
+/* Regression Trees */
+/********************/
+
+/* Consturct a function that fits regression trees of a specified depth.
+
+   Returns a function ((xs, ys) => (x => _)) that fits a regression tree
+   to the supplied xs, ys data.
+*/
+let make_regression_tree = function(parameters) {
+    let depth = Number(parameters["depth"]);
+    return function(xs, ys) {
+        /* We sort the data once up front, it will stay sorted as we
+           decend the tree.
+        */
+        let [xsorted, ysorted] = sort_data(xs, ys);
+        let tree = fit_regression_tree(xsorted, ysorted, depth);
+        let regression_tree_predict_pointwise = function(x) {
+            return score_regression_tree(x, tree);
+        }
+        return vectorize(regression_tree_predict_pointwise);
+    }
+}
+
+/* Fit a regression tree to data of a specified depth.
+
+   Returns a simple object (informally of type tree) representing a fit
+   regression tree.  A tree object has the following shape.
+
+    {
+        "is_leaf": <boolean: is this tree a lead node?>,
+        "value": <float: The value to predict in this node, if a leaf>,
+        "left_child_condition": <function: f(x) answers "is x in the reigon
+                                 defined by the left child node>
+        "left_child": <tree: A fit regression tree to those xs, ys in the left
+                       child>,
+        "right_child": <tree: A fit regression tree to those xs, ys in the
+                        right child>,
+    }
+
+    The field "value" is only defined for lead nodes.  The fields
+    "left_child_condition", "left_child", and "right_child" are only defined if
+    *not* a lead node.
+*/
+let fit_regression_tree = function(xs, ys, depth) {
+    if(depth === 0 || ys.length <= 1) {
+        /* Base case step. */
+        let tree = make_tree_object();
+        tree.is_leaf = true;
+        tree.value = d3.mean(ys);
+        return tree;
+    } else {
+        /* Recursive step. */
+        let split = compute_split_point(xs, ys);
+        let condition = function(x) {return x <= split}
+        let ps = d3.zip(xs, ys);
+        let left_data = ps.filter(p => condition(p[0]));
+        let right_data = ps.filter(p => !condition(p[0]));
+        /* Construct and return the tree */
+        let tree = make_tree_object();
+        tree.left_child_condition = condition;
+        tree.left_child = fit_regression_tree(
+            unzip(left_data, 0), unzip(left_data, 1), depth - 1);
+        tree.right_child = fit_regression_tree(
+            unzip(right_data, 0), unzip(right_data, 1), depth - 1);
+        return tree;
+    }
+}
+
+
+/* Construct an empty tree object. */
+let make_tree_object = function() {
+    return {
+        "is_leaf": false,
+        "left_child_condition": null,
+        "left_child": null,
+        "right_child": null,
+        "value": null
+    }
+}
+
+/* Compute the optimal split point in data xs, ys.
+
+   The split point is the midpoint between two data points, so that grouping
+   the ys data into those left of and right of the split point produces the
+   least total varaince.
+
+   Note: This function assumes that the xs, ys data is sorted in increasing
+         xs order.
+*/
+let compute_split_point = function(xs, ys) {
+    let best_sosd = Infinity;
+    let best_split = null;
+    for(let i = 1; i <= ys.length - 1; i++) {
+        let left_ys = ys.slice(0, i);
+        let right_ys = ys.slice(i, ys.length);
+        let this_sosd = sum_of_squared_errors(left_ys) + 
+                        sum_of_squared_errors(right_ys);
+        if(this_sosd <= best_sosd) {
+            best_sosd  = this_sosd;
+            best_split = (xs[i-1] + xs[i]) / 2;
+        }
+    }
+    return best_split;
+}
+
+/* Generate a predictor from a regression tree at a point x */
+let score_regression_tree = function(x, tree) {
+    if(tree.is_leaf == true) {
+        return tree.value;
+    } else {
+        if(tree.left_child_condition(x)) {
+            return score_regression_tree(x, tree.left_child);
+        } else {
+            return score_regression_tree(x, tree.right_child);
+        }
+    }
+}
 
 /* A namespace for scatterplot smoother objects.
 
@@ -365,7 +506,7 @@ let make_polynomial_regression = function(polynomial_basis_function) {
     - parameters: Configuration objects for hyperparameters.  These are used
       to populate input slider elements in the user interface.
 */
-smoothers = {
+let smoothers = {
 
     /* Trivial global mean smoother.
 
@@ -403,9 +544,7 @@ smoothers = {
             let k = Number(parameters["k"]);
             return function(xs, ys) {
                 // Reorder xs and ys so that xs is in increasing order
-                let psort = d3.zip(xs, ys).sort(function(a, b) {return a[0] - b[0]});
-                let xsort = psort.map(p => p[0]);
-                let ysort = psort.map(p => p[1]);
+                let [xsort, ysort] = sort_data(xs, ys);
                 let mean_of_symm_nbrd = function(newx) {
                     let pos_in_array = d3.bisect(xsort, newx);
                     let cutoffs = [
@@ -625,8 +764,25 @@ smoothers = {
         ],
 
         "knot_function": make_knots
-    }
+    },
 
+    /* Regression tree smoother.
+
+    Hyperparameters:
+        depth: The maximum depth in the fit tree.  The final tree has 2**depth
+               leaf nodes.
+    */
+    "smooth-type-regression-tree": {
+    
+        "label": "Regression Tree",
+
+        "smoother": make_regression_tree,
+
+        "parameters": [
+            {"label": "Maximum Tree Depth", "name": "depth",
+             "min": 0, "max": 7, "step": 1, "default": 1}
+        ]
+    },
 
 /*
     // Locally weighted linear regression smoother.
