@@ -490,6 +490,50 @@ let score_regression_tree = function(x, tree) {
     }
 }
 
+
+/*********************/
+/* Gradient Boosting */
+/*********************/
+
+let make_boosted_model = function(paramters) {
+    let learning_rate = Number(parameters["learning_rate"]);
+    let n_trees = Number(parameters["n_trees"]);
+    let tree_depth = Number(parameters["tree_depth"]);
+    let [xsorted, ysorted] = sort_data(xs, ys);
+    return function(xs, ys) {
+        let booster = fit_boosted_model(xs, ys, n_trees, learning_rate, tree_depth);
+        let boosted_model_predict_pointwise = function(x) {
+            return score_boosted_model(x, booster);
+        }
+        return vectorize(boosted_model_predict_pointwise);
+    }
+}
+
+let fit_boosted_model = function(xs, ys, n_trees, learning_rate, tree_depth) {
+    let boosted_model = new_boosted_model();
+    let working_ys = ys.slice(); // Copy.
+    /* Fit the first stage */
+    boosted_model.intercept = d3.mean(ys);
+    working_ys = working_ys.map(y => y - boosted_model.intercept);
+    /* Boost */
+    for(let i = 0; i <= n_trees; i++) {
+        let tree = fit_regression_tree(xs, working_ys, tree_depth);
+        working_ys = 
+            d3.zip(xs, working_ys)
+              .map(p => p[1] - learning_rate * score_regression_tree(p[0], tree));
+        boosted_model.trees.push(tree);
+    }
+    return boosted_model;
+}
+
+let new_boosted_model = function() {
+    return {"intercept": null, "trees": []};
+}
+
+/************************/
+/* Smoothing Algorithms */
+/************************/
+
 /* A namespace for scatterplot smoother objects.
 
   Each smoother object has three attributes:
