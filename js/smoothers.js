@@ -29,6 +29,13 @@ let wmean = function(x, w) {
     return d3.sum(r) / d3.sum(w);
 }
 
+/* The sum of squared errors of a data set when making a prediction equal
+   to the mean.
+*/
+let sum_of_squared_errors = function(xs) {
+    return xs.map(x => x - d3.mean(xs)).map(x => x*x).reduce((a, b) => a + b, 0);
+}
+
 /* Fit a simple linear regression on data (ys, xs).
 
    This returns a linear function, i.e. the prediction function from the
@@ -409,7 +416,7 @@ let make_regression_tree = function(parameters) {
     *not* a lead node.
 */
 let fit_regression_tree = function(xs, ys, depth) {
-    if(depth === 0) {
+    if(depth === 0 || ys.length <= 1) {
         /* Base case step. */
         let tree = make_tree_object();
         tree.is_leaf = true;
@@ -457,10 +464,11 @@ let make_tree_object = function() {
 let compute_split_point = function(xs, ys) {
     let best_sosd = Infinity;
     let best_split = null;
-    for(let i = 1; i <= ys.length; i++) {
+    for(let i = 1; i <= ys.length - 1; i++) {
         let left_ys = ys.slice(0, i);
         let right_ys = ys.slice(i, ys.length);
-        let this_sosd = d3.variance(left_ys) + d3.variance(right_ys);
+        let this_sosd = sum_of_squared_errors(left_ys) + 
+                        sum_of_squared_errors(right_ys);
         if(this_sosd <= best_sosd) {
             best_sosd  = this_sosd;
             best_split = (xs[i-1] + xs[i]) / 2;
