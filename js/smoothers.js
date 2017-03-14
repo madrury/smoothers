@@ -375,7 +375,7 @@ let make_polynomial_regression = function(polynomial_basis_function) {
 /* Regression Trees */
 /********************/
 
-/* Consturct a function that fits regression trees of a specified depth.
+/* Construct a function that fits regression trees of a specified depth.
 
    Returns a function ((xs, ys) => (x => _)) that fits a regression tree
    to the supplied xs, ys data.
@@ -411,7 +411,7 @@ let make_regression_tree = function(parameters) {
                         right child>,
     }
 
-    The field "value" is only defined for lead nodes.  The fields
+    The field "value" is only defined for leaf nodes.  The fields
     "left_child_condition", "left_child", and "right_child" are only defined if
     *not* a lead node.
 */
@@ -489,6 +489,78 @@ let score_regression_tree = function(x, tree) {
         }
     }
 }
+
+
+/*********************/
+/* Gradient Boosting */
+/*********************/
+
+/* Construct a function that fits a gradient boosted regression.
+
+   Returns a function ((xs, ys) => (x => _)) that fits a gradient booster
+   to the supplied xs, ys data.
+*/
+let make_boosted_model = function(parameters) {
+    let learning_rate = Number(parameters["learning_rate"]);
+    let n_trees = Number(parameters["n_trees"]);
+    let tree_depth = Number(parameters["tree_depth"]);
+    return function(xs, ys) {
+        let [xsorted, ysorted] = sort_data(xs, ys);
+        let booster = fit_boosted_model(xs, ys, n_trees, learning_rate, tree_depth);
+        let boosted_model_predict_pointwise = function(x) {
+            return score_boosted_model(x, booster);
+        }
+        return vectorize(boosted_model_predict_pointwise);
+    }
+}
+
+/* Fit a gradient boosted regression to data of a specified depth.
+
+   Returns a simple object (informally of type booster) representing a fit
+   boosted model.  A booster object has the following shape.
+
+   {
+       "intercept": <The mean of the training data, used as the 0'th
+                     boosting stage>,
+       "trees": [<Array of tree objects, the boosting stages>],
+       "learning_rate": <The learning rate of the boosted model>
+   }
+*/
+let fit_boosted_model = function(xs, ys, n_trees, learning_rate, tree_depth) {
+    let boosted_model = new_boosted_model();
+    boosted_model.learning_rate = learning_rate;
+    let working_ys = ys.slice(); // Copy.
+    /* Fit the first stage */
+    boosted_model.intercept = d3.mean(ys);
+    working_ys = working_ys.map(y => y - boosted_model.intercept);
+    /* Boost */
+    for(let i = 0; i <= n_trees; i++) {
+        let tree = fit_regression_tree(xs, working_ys, tree_depth);
+        working_ys = 
+            d3.zip(xs, working_ys)
+              .map(p => p[1] - learning_rate * score_regression_tree(p[0], tree));
+        boosted_model.trees.push(tree);
+    }
+    return boosted_model;
+}
+
+/* Construct a booster object. */
+let new_boosted_model = function() {
+    return {"intercept": null, "trees": [], "learning_rate": null};
+}
+
+/* Make predictions on a new datapoint from a booster object. */
+let score_boosted_model = function(x, booster) {
+    let y_hat = booster.intercept;
+    for(let i = 0; i < booster.trees.length; i++) {
+        y_hat += booster.learning_rate * score_regression_tree(x, booster.trees[i]);
+    }
+    return y_hat;
+}
+
+/************************/
+/* Smoothing Algorithms */
+/************************/
 
 /* A namespace for scatterplot smoother objects.
 
@@ -784,6 +856,28 @@ let smoothers = {
         ]
     },
 
+    /* Gradient boosting to minimize the sum of squared errors.
+
+    Hyperparameters:
+        n_trees: The number of boosting stages.
+        learning_rate: Learning rate.
+        tree_depth: The maximum depth of the individual trees.
+    */
+    "smooth-type-boosting": {
+    
+        "label": "Gradient Boosting Regression",
+
+        "smoother": make_boosted_model,
+
+        "parameters": [
+            {"label": "Number of Boosting Stages", "name": "n_trees",
+             "min": 0, "max": 250, "step": 1, "default": 5},
+            {"label": "Learning Rate", "name": "learning_rate",
+             "min": 0, "max": 1, "step": 0.01, "default": 0.05},
+            {"label": "Maximum Tree Depth", "name": "tree_depth",
+             "min": 0, "max": 7, "step": 1, "default": 1}
+        ]
+    },
 /*
     // Locally weighted linear regression smoother.
     "smooth-type-loess": function(xs, ys) {
